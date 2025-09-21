@@ -1,0 +1,17 @@
+[33mcommit 11648bfbdddcbf0a7ac384f65f2cc9867ca9284f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: ridhoSetia <ridho.setiawan24406@gmail.com>
+Date:   Sun Sep 21 23:47:13 2025 +0800
+
+    feat: Implement Story Mode, Game Hub, and Profile Management
+
+[33mcommit dbd8152954d70a85174a9a64744fde21350fb1b7[m
+Author: ridhoSetia <ridho.setiawan24406@gmail.com>
+Date:   Sun Sep 21 21:29:48 2025 +0800
+
+    feat: Add gameplay, leaderboards
+
+[33mcommit 21dff3497285ce90d704e1501839cef0b5f839de[m
+Author: ridhoSetia <ridho.setiawan24406@gmail.com>
+Date:   Sun Sep 21 21:08:04 2025 +0800
+
+    feat: Initial project setup with Next.js, Supabase, and Tailwind CSS & - Implemented user registration and login functionality.

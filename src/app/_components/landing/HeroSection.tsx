@@ -27,7 +27,7 @@ export default function HeroSection() {
     };
 
     return (
-        <section className="gradient-bg text-white py-20">
+        <section className="gradient-bg text-white py-40">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                 <div className="animate-bounce-slow inline-block">
                     <Rocket size={64} className="mb-6" />
