@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { useAuth } from '../_contexts/AuthContext';
-import { User, LogOut } from 'lucide-react';
+import { User, LogOut, UserCircle } from 'lucide-react'; // <-- Tambahkan UserCircle
 import toast from 'react-hot-toast';
+import Link from 'next/link'; // <-- Tambahkan import Link
 
 export default function UserMenu() {
   const { user, signOut } = useAuth();
@@ -11,8 +12,11 @@ export default function UserMenu() {
 
   const handleSignOut = async () => {
     await signOut();
+    setIsOpen(false); // Tutup menu setelah logout
     toast.success("Anda berhasil logout.");
   };
+
+  if (!user) return null; // Jika user belum ter-load, jangan render apa-apa
 
   return (
     <div className="relative">
@@ -29,6 +33,17 @@ export default function UserMenu() {
             <div className="px-4 py-2 text-sm text-gray-700 border-b">
               <p className="font-semibold truncate">{user?.email}</p>
             </div>
+            
+            {/* --- TAUTAN PROFIL BARU DITAMBAHKAN DI SINI --- */}
+            <Link 
+              href="/profile" 
+              onClick={() => setIsOpen(false)} // Tutup menu saat link diklik
+              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+            >
+              <UserCircle size={16} />
+              <span>Profil Saya</span>
+            </Link>
+            
             <button
               onClick={handleSignOut}
               className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
