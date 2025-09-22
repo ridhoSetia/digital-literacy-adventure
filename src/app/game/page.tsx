@@ -3,22 +3,25 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { CheckCircle, Plus, Users, Loader2 } from 'lucide-react';
+//                   👇 TAMBAHKAN 'Play' DI SINI
+import { CheckCircle, Plus, Users, Loader2, Play } from 'lucide-react';
 import JoinGameModal from '../_components/JoinGameModal';
 import { createClient } from '@/lib/supabase-client';
 import { useAuth } from '../_contexts/AuthContext';
 
-// Tipe data untuk Game
+// Tipe data untuk Game (diperbarui)
 type Game = {
   id: string;
   title: string;
   description: string | null;
   game_code: string;
   cover_image_url: string | null;
+  play_count: number; // <-- TAMBAHKAN baris ini
   profiles: { username: string } | null;
 };
 
 // --- KOMPONEN KARTU GAME ---
+// --- KOMPONEN KARTU GAME (DIPERBARUI) ---
 function GameCard({ game, isCompleted }: { game: Game; isCompleted: boolean }) {
   const cardContent = (
     <div className={`relative block group border rounded-lg overflow-hidden shadow-sm transition-shadow duration-300 bg-white ${isCompleted ? 'cursor-not-allowed' : 'hover:shadow-xl'}`}>
@@ -37,10 +40,19 @@ function GameCard({ game, isCompleted }: { game: Game; isCompleted: boolean }) {
           </div>
         )}
       </div>
-      <div className="p-4">
-        <h3 className={`text-lg font-bold truncate ${!isCompleted ? 'group-hover:text-primary' : 'text-gray-500'}`}>{game.title}</h3>
-        <p className="text-sm text-gray-600 mt-1 h-10 overflow-hidden">{game.description || 'Tidak ada deskripsi.'}</p>
-        <p className="text-xs text-gray-500 mt-2">Dibuat oleh: {game.profiles?.username || 'Admin'}</p>
+      <div className="p-4 flex flex-col justify-between h-32">
+        <div>
+          <h3 className={`text-lg font-bold truncate ${!isCompleted ? 'group-hover:text-primary' : 'text-gray-500'}`}>{game.title}</h3>
+          <p className="text-sm text-gray-600 mt-1 h-10 overflow-hidden">{game.description || 'Tidak ada deskripsi.'}</p>
+        </div>
+        {/* --- TAMPILAN BARU UNTUK CREATOR & PLAY COUNT --- */}
+        <div className="flex justify-between items-center text-xs text-gray-500 mt-2">
+          <span>Oleh: {game.profiles?.username || 'Admin'}</span>
+          <span className="flex items-center gap-1 font-medium">
+            <Play size={12} />
+            {game.play_count.toLocaleString('id-ID')}
+          </span>
+        </div>
       </div>
     </div>
   );

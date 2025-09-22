@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-client';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/app/_contexts/AuthContext';
+import { ArrowRight } from 'lucide-react';
 
 // --- Tipe Data (Diperbarui untuk mendukung kedua mode) ---
 type Scenario = {
@@ -149,11 +150,8 @@ export default function GamePage() {
       setHp(prev => Math.max(0, prev - 20));
       toast.error(optionKey ? 'Kurang Tepat! -20 HP' : 'Waktu Habis! -20 HP', { icon: '💔' });
     }
-
-    // Di mode kuis, otomatis lanjut. Di mode cerita, user klik tombol.
-    if (game?.game_type === 'quiz') {
-      setTimeout(nextStep, 2000);
-    }
+    
+    // setTimeout otomatis telah dihapus
   }, [isAnswered, currentScenario, game?.game_type]);
 
   const nextStep = () => {
@@ -170,52 +168,45 @@ export default function GamePage() {
   };
 
   const endGame = async () => {
-    const endGame = async () => {
-      if (!user || !game) return;
-      toast.loading('Menyimpan hasil...');
+    if (!user || !game) return;
+    toast.loading('Menyimpan hasil...');
 
-      // Langkah 1: Simpan detail skor sesi ini ke tabel 'scores'
-      const { data: scoreData, error: scoreError } = await supabase
-        .from('scores')
-        .insert({
-          user_id: user.id,
-          game_id: game.id,
-          score_achieved: score
-        })
-        .select('id')
-        .single();
+    const { data: scoreData, error: scoreError } = await supabase
+      .from('scores')
+      .insert({
+        user_id: user.id,
+        game_id: game.id,
+        score_achieved: score
+      })
+      .select('id')
+      .single();
 
-      if (scoreError) {
-        toast.dismiss();
-        toast.error("Gagal menyimpan sesi permainan.");
-        return;
-      }
-
-      // --- TAMBAHAN BARU: Update play_count untuk game ---
-      const { error: playCountError } = await supabase.rpc('increment_play_count', {
-        game_id_input: game.id
-      });
-
-      if (playCountError) {
-        // Jika gagal, tampilkan error di console tapi jangan hentikan alur user
-        console.error("Failed to increment play count:", playCountError);
-      }
-      // --- AKHIR DARI TAMBAHAN BARU ---
-
-      // Langkah 2: Panggil RPC untuk menambahkan XP ke profil user
-      const { error: rpcError } = await supabase.rpc('increment_xp', {
-        user_id_input: user.id,
-        xp_to_add: score
-      });
-
+    if (scoreError) {
       toast.dismiss();
-      if (rpcError) {
-        toast.error("Gagal memperbarui total XP Anda.");
-      } else {
-        toast.success("Game Selesai!");
-        router.push(`/result/${scoreData.id}`);
-      }
-    };
+      toast.error("Gagal menyimpan sesi permainan.");
+      return;
+    }
+
+    const { error: playCountError } = await supabase.rpc('increment_play_count', {
+      game_id_input: game.id
+    });
+
+    if (playCountError) {
+      console.error("Failed to increment play count:", playCountError);
+    }
+
+    const { error: rpcError } = await supabase.rpc('increment_xp', {
+      user_id_input: user.id,
+      xp_to_add: score
+    });
+
+    toast.dismiss();
+    if (rpcError) {
+      toast.error("Gagal memperbarui total XP Anda.");
+    } else {
+      toast.success("Game Selesai!");
+      router.push(`/result/${scoreData.id}`);
+    }
   };
 
 
@@ -246,9 +237,18 @@ export default function GamePage() {
         ))}
       </div>
       {isAnswered && (
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-          <h3 className="font-bold">Penjelasan:</h3>
-          <p>{currentScenario.explanation}</p>
+        <div className="mt-6 animate-fade-in">
+            <div className="p-4 bg-gray-50 rounded-lg">
+                <h3 className="font-bold">Penjelasan:</h3>
+                <p>{currentScenario.explanation}</p>
+            </div>
+            <button 
+                onClick={nextStep} 
+                className="w-full mt-4 bg-primary text-white py-3 rounded-lg font-semibold hover:bg-secondary transition flex items-center justify-center gap-2"
+            >
+                {currentScenarioIndex < game!.scenarios.length - 1 ? 'Lanjut ke Pertanyaan Berikutnya' : 'Lihat Hasil Akhir'}
+                <ArrowRight size={18} />
+            </button>
         </div>
       )}
     </div>
