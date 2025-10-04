@@ -12,37 +12,37 @@ import Image from 'next/image'; // <-- menambah import ini
 // Tipe data
 type ScenarioOption = { [key: string]: string };
 type Scenario = {
-  situation: string;
-  question: string;
-  options: ScenarioOption;
-  correct_answer: string;
-  points: number;
-  explanation: string;
-  highlight_phrase: string;
-  answer_time: number;
-  image_url?: string;
+    situation: string;
+    question: string;
+    options: ScenarioOption;
+    correct_answer: string;
+    points: number;
+    explanation: string;
+    highlight_phrase: string;
+    answer_time: number;
+    image_url?: string;
 };
 
 export default function CreateGamePage() {
     const supabase = createClient();
     const { user } = useAuth();
     const router = useRouter();
-    
+
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [coverImage, setCoverImage] = useState<File | null>(null);
     const [gameType, setGameType] = useState<'quiz' | 'story'>('quiz');
     const [isOfficial, setIsOfficial] = useState(false);
-    
+
     const [scenarios, setScenarios] = useState<Array<Partial<Scenario> & { imageFile?: File | null }>>([
         { situation: '', options: { 'A': '', 'B': '' }, correct_answer: 'A', points: 20, imageFile: null, explanation: '', question: '', highlight_phrase: '', answer_time: 15 }
     ]);
-    
+
     const [isAdmin, setIsAdmin] = useState(false);
     const [loading, setLoading] = useState(false);
     const [isShareModalOpen, setShareModalOpen] = useState(false);
     const [createdGameData, setCreatedGameData] = useState({ gameCode: '', shareLink: '' });
-    
+
     useEffect(() => {
         const checkUserRole = async () => {
             if (user) {
@@ -59,11 +59,14 @@ export default function CreateGamePage() {
     const removeScenario = (index: number) => {
         setScenarios(scenarios.filter((_, i) => i !== index));
     };
-    const handleScenarioChange = (index: number, field: keyof Scenario, value: any) => {
+
+    // PERUBAIKAN DITERAPKAN DI SINI
+    const handleScenarioChange = (index: number, field: keyof Scenario, value: string | number) => {
         const newScenarios = [...scenarios];
         newScenarios[index] = { ...newScenarios[index], [field]: value };
         setScenarios(newScenarios);
     };
+
     const handleOptionChange = (scenarioIndex: number, optionKey: string, value: string) => {
         const newScenarios = [...scenarios];
         if (!newScenarios[scenarioIndex].options) newScenarios[scenarioIndex].options = {};
@@ -100,10 +103,10 @@ export default function CreateGamePage() {
         coverImageUrl = supabase.storage.from('game-covers').getPublicUrl(coverFilePath).data.publicUrl;
 
         const gameCode = `DIGI${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-        
-        const { data: gameData, error: gameError } = await supabase.from('games').insert({ 
+
+        const { data: gameData, error: gameError } = await supabase.from('games').insert({
             creator_id: user.id, title, description, game_code: gameCode,
-            cover_image_url: coverImageUrl, game_type: gameType, is_official: isAdmin && isOfficial 
+            cover_image_url: coverImageUrl, game_type: gameType, is_official: isAdmin && isOfficial
         }).select().single();
 
         if (gameError) { toast.dismiss(); toast.error(`Gagal menyimpan game: ${gameError.message}`); setLoading(false); return; }
@@ -120,7 +123,7 @@ export default function CreateGamePage() {
                 return { ...scenarioData, game_id: gameData!.id, image_url: imageUrl };
             })
         );
-        
+
         // PERBAIKAN 1: Hapus `as any`
         const { error: scenariosError } = await supabase.from('scenarios').insert(scenariosToInsert);
 
@@ -134,7 +137,7 @@ export default function CreateGamePage() {
         }
         setLoading(false);
     };
-    
+
     const closeShareModalAndReset = () => {
         setShareModalOpen(false);
         router.push('/game');
@@ -146,19 +149,19 @@ export default function CreateGamePage() {
                 <div className="max-w-4xl mx-auto px-4 pb-8 sm:px-6 lg:px-8">
                     <div className="bg-slate-900/50 backdrop-blur-sm border border-violet-700 rounded-xl shadow-lg p-8">
                         <h2 className="text-4xl font-bold mb-8 font-display tracking-wider text-center">Buat Game Literasi Digital</h2>
-                        
+
                         <div className="mb-6">
                             <label className="block text-sm font-medium text-gray-400 mb-2">Tipe Game</label>
                             <div className="flex gap-4">
                                 <button type="button" onClick={() => setGameType('quiz')} className={`flex-1 p-4 border-2 rounded-lg flex items-center gap-3 transition-colors duration-200 ${gameType === 'quiz' ? 'border-violet-500 bg-slate-800' : 'border-slate-700 hover:border-slate-500'}`}>
-                                    <MessageSquare className={gameType === 'quiz' ? 'text-violet-400' : 'text-gray-500'}/>
+                                    <MessageSquare className={gameType === 'quiz' ? 'text-violet-400' : 'text-gray-500'} />
                                     <div>
                                         <p className="font-semibold text-left">Kuis Pilihan Ganda</p>
                                         <p className="text-xs text-gray-400 text-left">Format tanya jawab klasik.</p>
                                     </div>
                                 </button>
                                 <button type="button" onClick={() => setGameType('story')} className={`flex-1 p-4 border-2 rounded-lg flex items-center gap-3 transition-colors duration-200 ${gameType === 'story' ? 'border-violet-500 bg-slate-800' : 'border-slate-700 hover:border-slate-500'}`}>
-                                    <FileText className={gameType === 'story' ? 'text-violet-400' : 'text-gray-500'}/>
+                                    <FileText className={gameType === 'story' ? 'text-violet-400' : 'text-gray-500'} />
                                     <div>
                                         <p className="font-semibold text-left">Mode Cerita</p>
                                         <p className="text-xs text-gray-400 text-left">Format narasi interaktif.</p>
@@ -201,31 +204,31 @@ export default function CreateGamePage() {
                                     <label htmlFor="is_official" className="flex items-center gap-3 cursor-pointer">
                                         <input type="checkbox" id="is_official" checked={isOfficial} onChange={(e) => setIsOfficial(e.target.checked)} className="h-5 w-5 rounded border-gray-500 bg-slate-700 text-violet-500 focus:ring-violet-500" />
                                         <div className="flex items-center gap-2">
-                                            <ShieldCheck className="text-blue-400" size={20}/>
+                                            <ShieldCheck className="text-blue-400" size={20} />
                                             <span className="font-semibold text-blue-300">Jadikan Game Resmi (Khusus Admin)</span>
                                         </div>
                                     </label>
                                 </div>
                             )}
-                            
-                            <hr className="border-slate-700"/>
-                            
+
+                            <hr className="border-slate-700" />
+
                             {scenarios.map((scenario, index) => (
                                 <div key={index} className="scenario-item bg-slate-800/50 p-6 rounded-lg border border-slate-700">                                    <div className="flex justify-between items-center mb-4">
-                                        <h3 className="text-lg font-semibold font-display tracking-wide">Skenario {index + 1}</h3>
-                                        {scenarios.length > 1 && (<button type="button" onClick={() => removeScenario(index)} className="text-red-500 hover:text-red-400"><Trash2 size={18} /></button>)}
-                                    </div>
+                                    <h3 className="text-lg font-semibold font-display tracking-wide">Skenario {index + 1}</h3>
+                                    {scenarios.length > 1 && (<button type="button" onClick={() => removeScenario(index)} className="text-red-500 hover:text-red-400"><Trash2 size={18} /></button>)}
+                                </div>
                                     {/* KONTEN FORM SKENARIO YANG DIPERBARUI */}
                                     <div className="space-y-4">
-                                    <div>
+                                        <div>
                                             <label className="block text-sm font-medium text-gray-400">Gambar Skenario (Opsional, Maks 200KB)</label>
                                             <div className="mt-2 flex items-center gap-4">
                                                 <div className="relative w-24 h-16 bg-slate-700 border border-slate-600 rounded-md flex items-center justify-center">
                                                     {/* PERBAIKAN 2: Ganti <img> dengan <Image> */}
                                                     {scenario.imageFile ? (
-                                                        <Image src={URL.createObjectURL(scenario.imageFile)} alt="preview" layout="fill" className="object-cover rounded-md"/>
+                                                        <Image src={URL.createObjectURL(scenario.imageFile)} alt="preview" layout="fill" className="object-cover rounded-md" />
                                                     ) : (
-                                                        <ImageIcon className="h-8 w-8 text-gray-500"/>
+                                                        <ImageIcon className="h-8 w-8 text-gray-500" />
                                                     )}
                                                 </div>
                                                 <label htmlFor={`scenario-image-${index}`} className="cursor-pointer text-sm text-violet-400 font-semibold hover:underline">
@@ -234,7 +237,7 @@ export default function CreateGamePage() {
                                                 </label>
                                             </div>
                                         </div>
-                                        
+
                                         {gameType === 'story' && (<>
                                             <label className="block text-sm font-medium text-gray-400">Teks Narasi/Cerita</label>
                                             <textarea rows={5} value={scenario.situation || ''} onChange={(e) => handleScenarioChange(index, 'situation', e.target.value)} className="w-full bg-slate-800 border-slate-700 px-4 py-2 border rounded-lg focus:ring-violet-500 focus:border-violet-500" required></textarea>
@@ -243,12 +246,12 @@ export default function CreateGamePage() {
                                             <label className="block text-sm font-medium text-gray-400">Frasa untuk di-Highlight (Stabilo)</label>
                                             <input type="text" value={scenario.highlight_phrase || ''} onChange={(e) => handleScenarioChange(index, 'highlight_phrase', e.target.value)} className="w-full bg-slate-800 border-slate-700 px-4 py-2 border rounded-lg focus:ring-violet-500 focus:border-violet-500" placeholder="Harus sama persis dengan teks di narasi" required />
                                         </>)}
-                                        
+
                                         {gameType === 'quiz' && (<>
                                             <label className="block text-sm font-medium text-gray-400">Pertanyaan Kuis</label>
                                             <textarea rows={3} value={scenario.situation || ''} onChange={(e) => handleScenarioChange(index, 'situation', e.target.value)} className="w-full bg-slate-800 border-slate-700 px-4 py-2 border rounded-lg focus:ring-violet-500 focus:border-violet-500" required></textarea>
                                         </>)}
-                                        
+
                                         <div className="flex flex-col md:flex-row gap-4">
                                             {['A', 'B', 'C', 'D'].map(optionKey => (
                                                 <div key={optionKey}>
@@ -257,7 +260,7 @@ export default function CreateGamePage() {
                                                 </div>
                                             ))}
                                         </div>
-                                        
+
                                         <div className="flex flex-col md:flex-row gap-4">
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-400 mb-2">Jawaban Benar</label>
@@ -270,23 +273,23 @@ export default function CreateGamePage() {
                                                 <input type="number" min="10" value={scenario.points || 20} onChange={(e) => handleScenarioChange(index, 'points', parseInt(e.target.value))} className="w-full bg-slate-800 border-slate-700 px-4 py-2 border rounded-lg focus:ring-violet-500 focus:border-violet-500" required />
                                             </div>
                                         </div>
-                                        
+
                                         {gameType === 'story' && (
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-400 mb-2">Waktu Menjawab (detik)</label>
                                                 <input type="number" min="5" value={scenario.answer_time || 15} onChange={(e) => handleScenarioChange(index, 'answer_time', parseInt(e.target.value))} className="w-full bg-slate-800 border-slate-700 px-4 py-2 border rounded-lg focus:ring-violet-500 focus:border-violet-500" required />
                                             </div>
                                         )}
-                                        
+
                                         <textarea rows={2} value={scenario.explanation || ''} onChange={(e) => handleScenarioChange(index, 'explanation', e.target.value)} className="w-full bg-slate-800 border-slate-700 px-4 py-2 border rounded-lg focus:ring-violet-500 focus:border-violet-500" placeholder="Jelaskan mengapa jawaban tersebut benar..."></textarea>
                                     </div>
                                 </div>
                             ))}
-                            
+
                             <button type="button" onClick={addScenario} className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2 font-semibold">
                                 <Plus size={18} /> Tambah Skenario
                             </button>
-                            
+
                             <div className="flex justify-end space-x-4 pt-4">
                                 <button type="button" onClick={() => router.push('/game')} className="px-6 py-3 border border-slate-600 rounded-lg hover:bg-slate-800 transition flex items-center gap-2 font-semibold">
                                     <ArrowLeft size={18} /> Kembali
