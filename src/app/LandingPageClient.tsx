@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import JoinGameModal from './_components/JoinGameModal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGamepad, faShieldHalved, faHeadphones, faBolt } from '@fortawesome/free-solid-svg-icons';
@@ -9,15 +9,37 @@ import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-// Import komponen section
+// Import komponen baru
+import LoadingScreen from './_components/LoadingScreen';
 import FeaturesSection from './_components/landing/FeaturesSection';
 import SdgSection from './_components/landing/SdgSection';
 import QuickActionsSection from './_components/landing/QuickActionsSection';
 
 export default function LandingPageClient({ totalPlays }: { totalPlays: number }) {
     const [isJoinModalOpen, setJoinModalOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(true); // State untuk loading
     const router = useRouter();
     const { user } = useAuth();
+
+    useEffect(() => {
+        // Fungsi untuk menangani saat loading selesai
+        const handleLoadingComplete = () => {
+            // Beri jeda 1 detik sebelum menghilangkan loading screen
+            setTimeout(() => {
+                setIsLoading(false);
+            }, 1000);
+        };
+
+        // Cek jika dokumen sudah selesai dimuat saat komponen pertama kali render
+        if (document.readyState === 'complete') {
+            handleLoadingComplete();
+        } else {
+            // Jika belum, tambahkan event listener untuk menunggu event 'load'
+            window.addEventListener('load', handleLoadingComplete);
+            // Cleanup event listener saat komponen di-unmount
+            return () => window.removeEventListener('load', handleLoadingComplete);
+        }
+    }, []);
 
     const handlePlay = () => {
         if (!user) {
@@ -29,6 +51,7 @@ export default function LandingPageClient({ totalPlays }: { totalPlays: number }
 
     return (
         <>
+            <LoadingScreen isLoading={isLoading} />
             <div className="relative z-10">
                 {/* HERO SECTION WRAPPER */}
                 <div className="relative min-h-screen flex flex-col items-center justify-center text-center p-6 overflow-hidden">

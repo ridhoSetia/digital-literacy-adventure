@@ -3,14 +3,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { CheckCircle, Plus, Users, Loader2, Play, Flag, Shield } from 'lucide-react';
+import { CheckCircle, Plus, Users, Loader2, Play, Flag, Shield, History } from 'lucide-react';
 import JoinGameModal from '../_components/JoinGameModal';
 import ReportGameModal from '../_components/ReportGameModal';
 import { createClient } from '@/lib/supabase-client';
 import { useAuth } from '../_contexts/AuthContext';
 import toast from 'react-hot-toast';
 
-// Tipe data untuk Game (Tidak diubah)
 type Game = {
   id: string;
   title: string;
@@ -23,10 +22,9 @@ type Game = {
   profiles: { username: string } | null;
 };
 
-// --- KOMPONEN KARTU GAME (STYLING BARU) ---
-function GameCard({ game, isCompleted, onReport }: { game: Game; isCompleted: boolean; onReport: (gameId: string, gameTitle: string) => void; }) {
+function GameCard({ game, isCompleted, isInProgress, onReport }: { game: Game; isCompleted: boolean; isInProgress: boolean; onReport: (gameId: string, gameTitle: string) => void; }) {
   const cardContent = (
-    <div className={`w-72 flex-1 flex-grow relative block group border rounded-lg overflow-hidden shadow-sm transition-shadow duration-300 bg-slate-900/70 backdrop-blur-sm border-violet-700 text-white ${isCompleted ? 'cursor-not-allowed' : 'hover:shadow-violet-500/50'}`}>
+    <div className={`w-full sm:w-72 flex-shrink-0 relative group border rounded-lg overflow-hidden shadow-sm transition-shadow duration-300 bg-slate-900/70 backdrop-blur-sm border-violet-700 text-white ${isCompleted ? 'cursor-not-allowed' : 'hover:shadow-violet-500/50'}`}>
       {!game.is_official && !isCompleted && (
         <button 
           onClick={(e) => { 
@@ -39,12 +37,19 @@ function GameCard({ game, isCompleted, onReport }: { game: Game; isCompleted: bo
           <Flag size={14} />
         </button>
       )}
+      {isInProgress && !isCompleted && (
+        <div className="absolute top-2 left-2 z-10 px-2 py-1 bg-blue-600 rounded-md text-xs font-bold flex items-center gap-1">
+          <History size={12} />
+          <span>Lanjutkan</span>
+        </div>
+      )}
       <div className="relative w-full h-48">
         <Image 
           src={game.cover_image_url || '/placeholder.png'} 
           alt={`Cover for ${game.title}`} 
           fill 
-          style={{ objectFit: 'cover' }} 
+          style={{ objectFit: 'cover' }}
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           className={`transition-transform duration-300 ${!isCompleted ? 'group-hover:scale-105' : ''} ${isCompleted ? 'filter grayscale' : ''}`} 
         />
         {isCompleted && (
@@ -78,12 +83,12 @@ function GameCard({ game, isCompleted, onReport }: { game: Game; isCompleted: bo
 }
 
 
-// --- KOMPONEN UTAMA HALAMAN GAME (STYLING BARU) ---
 export default function GamesPage() {
   const [isJoinModalOpen, setJoinModalOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [allGames, setAllGames] = useState<Game[]>([]);
   const [completedGameIds, setCompletedGameIds] = useState(new Set<string>());
+  const [inProgressGameIds, setInProgressGameIds] = useState(new Set<string>());
   const [loading, setLoading] = useState(true);
   const [reportModalState, setReportModalState] = useState({
     isOpen: false,
@@ -99,22 +104,28 @@ export default function GamesPage() {
     const gamesPromise = supabase.from('games').select('*, profiles(username)').eq('is_under_review', false).order('created_at', { ascending: false });
     
     let completedGamesPromise;
+    let inProgressGamesPromise;
     let profilePromise;
 
     if (user) {
       completedGamesPromise = supabase.from('scores').select('game_id').eq('user_id', user.id);
+      inProgressGamesPromise = supabase.from('game_sessions').select('game_id').eq('user_id', user.id);
       profilePromise = supabase.from('profiles').select('role').eq('id', user.id).single();
     }
 
-    const [gamesResult, completedResult, profileResult] = await Promise.all([
+    const [gamesResult, completedResult, inProgressResult, profileResult] = await Promise.all([
       gamesPromise, 
-      completedGamesPromise, 
+      completedGamesPromise,
+      inProgressGamesPromise,
       profilePromise
     ]);
 
     if (gamesResult.data) setAllGames(gamesResult.data as Game[]);
     if (completedResult?.data) {
       setCompletedGameIds(new Set(completedResult.data.map(s => s.game_id)));
+    }
+    if (inProgressResult?.data) {
+      setInProgressGameIds(new Set(inProgressResult.data.map(s => s.game_id)));
     }
     if (profileResult?.data?.role === 'admin') {
       setIsAdmin(true);
@@ -164,6 +175,7 @@ export default function GamesPage() {
               key={game.id} 
               game={game} 
               isCompleted={completedGameIds.has(game.id)} 
+              isInProgress={inProgressGameIds.has(game.id)}
               onReport={handleReportClick} 
             />
           ))}

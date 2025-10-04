@@ -1,9 +1,16 @@
 import GamePlayer from "@/app/_components/GamePlayer";
 
-export default function PlayGamePage({ params }: { params: { game_code: string } }) {
-    // Halaman ini hanya bertugas mengambil game_code dari URL
-    // dan memberikannya ke komponen GamePlayer.
+// Komponen ini tetap async
+export default async function PlayGamePage({
+    params
+}: {
+    params: Promise<{ game_code: string }> // Ubah tipe params menjadi Promise
+}) {
+    // Await params sebelum mengakses propertinya
+    const { game_code } = await params;
+
+    // Sekarang bisa menggunakan game_code dengan aman
     return (
-        <GamePlayer gameCode={params.game_code} />
+        <GamePlayer gameCode={game_code} />
     );
 }

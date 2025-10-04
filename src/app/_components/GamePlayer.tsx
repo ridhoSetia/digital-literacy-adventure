@@ -28,7 +28,7 @@ type Game = {
     scenarios: Scenario[];
 };
 
-// --- Komponen Tambahan (Styling Diperbarui) ---
+// --- Komponen Tambahan (Tidak Diubah) ---
 const Timer = ({ duration, onTimeUp }: { duration: number, onTimeUp: () => void }) => {
     const [timeLeft, setTimeLeft] = useState(duration);
     useEffect(() => {
@@ -60,53 +60,113 @@ export default function GamePlayer({ gameCode, isReviewMode = false }: { gameCod
     const [isAnswered, setIsAnswered] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [viewState, setViewState] = useState<'reading' | 'answering' | 'feedback'>('reading');
+    const [isGameFinished, setIsGameFinished] = useState(false);
+    const [sessionLoaded, setSessionLoaded] = useState(false);
+
     const currentScenario = game?.scenarios[currentScenarioIndex];
-    const [isGameFinished, setIsGameFinished] = useState(false); // PENAMBAHAN BARU
+
+    const saveProgress = useCallback(async (indexToSave: number, scoreToSave: number, hpToSave: number) => {
+        if (!user || !game || isReviewMode || isGameFinished) return;
+
+        await supabase.from('game_sessions').upsert({
+            user_id: user.id,
+            game_id: game.id,
+            current_scenario_index: indexToSave,
+            score: scoreToSave,
+            hp: hpToSave,
+        }, { onConflict: 'user_id, game_id' });
+    }, [user, game, isReviewMode, isGameFinished, supabase]);
 
     useEffect(() => {
-        const fetchGameAndCheckCompletion = async () => {
-            if (!gameCode) return; // PENAMBAHAN: Hapus dependensi user
+        const fetchGameAndSession = async () => {
+            if (!gameCode) return;
             setIsLoading(true);
             const { data: gameData, error: gameError } = await supabase.from('games').select(`*, scenarios (*)`).eq('game_code', gameCode).single();
             if (gameError || !gameData) { toast.error('Game tidak ditemukan!'); if (!isReviewMode) { router.push('/game'); } return; }
 
-            // PENAMBAHAN: Logika ini hanya berjalan jika BUKAN mode review
             if (!isReviewMode && user) {
-                const { data: existingScore } = await supabase.from('scores').select('id').eq('user_id', user.id).eq('game_id', gameData.id).maybeSingle();
-                if (existingScore) { toast.error('Anda sudah menyelesaikan game ini!', { duration: 4000 }); router.push(`/result/${existingScore.id}`); return; }
+                const { data: sessionData } = await supabase
+                    .from('game_sessions')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .eq('game_id', gameData.id)
+                    .single();
+
+                if (sessionData) {
+                    setCurrentScenarioIndex(sessionData.current_scenario_index);
+                    setScore(sessionData.score);
+                    setHp(sessionData.hp);
+                    toast.success('Melanjutkan permainan...');
+                }
             }
 
             setGame(gameData as Game);
             if (gameData.game_type === 'quiz') setViewState('answering');
             setIsLoading(false);
+            setSessionLoaded(true);
         };
 
-        // PENAMBAHAN: Logika diperbarui untuk memperbolehkan mode review tanpa user
         if (isReviewMode || user) {
-            fetchGameAndCheckCompletion();
+            fetchGameAndSession();
         } else if (user === null && !isReviewMode) {
             toast.error("Anda harus login untuk bermain.");
             router.push('/');
         }
     }, [gameCode, user, router, supabase, isReviewMode]);
 
+    useEffect(() => {
+        if (!sessionLoaded || isLoading || !game) return;
+
+        if (isAnswered) {
+            if (currentScenarioIndex < game.scenarios.length - 1) {
+                saveProgress(currentScenarioIndex + 1, score, hp);
+            }
+        } else {
+            saveProgress(currentScenarioIndex, score, hp);
+        }
+    }, [isAnswered, currentScenarioIndex, score, hp, sessionLoaded, isLoading, game, saveProgress]);
+
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            if (!isGameFinished && game) {
+                if (isAnswered && currentScenarioIndex < game.scenarios.length - 1) {
+                    saveProgress(currentScenarioIndex + 1, score, hp);
+                } else {
+                    saveProgress(currentScenarioIndex, score, hp);
+                }
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [saveProgress, isGameFinished, isAnswered, currentScenarioIndex, score, hp, game]);
+
+
     const handleAnswer = useCallback((optionKey: string | null) => {
-        if (isAnswered) return;
-        setSelectedOption(optionKey);
-        setIsAnswered(true);
+        if (isAnswered || !currentScenario) return;
+
         if (game?.game_type === 'story') setViewState('feedback');
 
-        // PENAMBAHAN BARU: Jika mode review, jangan hitung skor atau HP
-        if (isReviewMode) return;
+        if (isReviewMode) {
+            setSelectedOption(optionKey);
+            setIsAnswered(true);
+            return;
+        }
 
-        const points = currentScenario?.points || 0;
-        if (optionKey === currentScenario?.correct_answer) {
+        const points = currentScenario.points || 0;
+        if (optionKey === currentScenario.correct_answer) {
             setScore(prev => prev + points);
             toast.success(`Benar! +${points} XP`, { icon: '🎉' });
         } else {
             setHp(prev => Math.max(0, prev - 20));
             toast.error(optionKey ? 'Kurang Tepat! -20 HP' : 'Waktu Habis! -20 HP', { icon: '💔' });
         }
+
+        setSelectedOption(optionKey);
+        setIsAnswered(true);
+
     }, [isAnswered, currentScenario, game?.game_type, isReviewMode]);
 
     const nextStep = () => {
@@ -121,15 +181,17 @@ export default function GamePlayer({ gameCode, isReviewMode = false }: { gameCod
     };
 
     const endGame = async () => {
-        // PENAMBAHAN BARU: Logika untuk mode review
+        setIsGameFinished(true);
         if (isReviewMode) {
-            setIsGameFinished(true); // Cukup set status selesai untuk menonaktifkan tombol
             toast.success("Review Selesai.");
             return;
         }
 
         if (!user || !game) return;
         toast.loading('Menyimpan hasil...');
+
+        await supabase.from('game_sessions').delete().match({ user_id: user.id, game_id: game.id });
+
         const { data: scoreData, error: scoreError } = await supabase.from('scores').insert({ user_id: user.id, game_id: game.id, score_achieved: score }).select('id').single();
         if (scoreError) { toast.dismiss(); toast.error("Gagal menyimpan sesi permainan."); return; }
         await supabase.rpc('increment_play_count', { game_id_input: game.id });
@@ -150,7 +212,7 @@ export default function GamePlayer({ gameCode, isReviewMode = false }: { gameCod
                 </div>
             )}
             <h2 className="text-2xl font-bold mb-4 font-display tracking-wider">{currentScenario.situation}</h2>
-            <div className="space-y-3">{Object.entries(currentScenario.options).map(([key, value]) => (<button key={key} onClick={() => handleAnswer(key)} disabled={isAnswered} className={`w-full text-left p-4 rounded-lg border-2 transition-all duration-200 
+            <div className="space-y-3">{Object.entries(currentScenario.options).map(([key, value]) => (<button key={key} onClick={() => handleAnswer(key)} disabled={isAnswered || isGameFinished} className={`w-full text-left p-4 rounded-lg border-2 transition-all duration-200 
                 ${isAnswered && key === currentScenario.correct_answer ? 'bg-green-900/50 border-green-500' : ''} 
                 ${isAnswered && key === selectedOption && key !== currentScenario.correct_answer ? 'bg-red-900/50 border-red-500' : ''} 
                 ${!isAnswered ? 'bg-slate-800/50 border-slate-700 hover:bg-violet-900/50 hover:border-violet-600' : 'border-slate-700'}`}>{value}</button>))}
@@ -161,7 +223,7 @@ export default function GamePlayer({ gameCode, isReviewMode = false }: { gameCod
                         <h3 className="font-bold font-display tracking-wide text-yellow-400">Penjelasan:</h3>
                         <p className="text-gray-300">{currentScenario.explanation}</p>
                     </div>
-                    <button onClick={nextStep} className="w-full mt-4 bg-violet-600 text-white py-3 rounded-lg font-semibold hover:bg-violet-700 transition flex items-center justify-center gap-2">
+                    <button onClick={nextStep} disabled={isGameFinished} className="w-full mt-4 bg-violet-600 text-white py-3 rounded-lg font-semibold hover:bg-violet-700 transition flex items-center justify-center gap-2 disabled:bg-slate-600">
                         {currentScenarioIndex < game!.scenarios.length - 1 ? 'Lanjut ke Pertanyaan Berikutnya' : 'Lihat Hasil Akhir'}
                         <ArrowRight size={18} />
                     </button>
@@ -178,11 +240,11 @@ export default function GamePlayer({ gameCode, isReviewMode = false }: { gameCod
                     <p className="text-lg leading-relaxed text-gray-300"><HighlightedText text={currentScenario.situation} highlight={viewState === 'feedback' ? currentScenario.highlight_phrase : null} /></p>
                 </div>
             )}
-            {viewState === 'reading' && (<button onClick={() => setViewState('answering')} className="w-full bg-violet-600 text-white py-3 rounded-lg font-semibold hover:bg-violet-700 transition">Lanjut untuk Menjawab</button>)}
+            {viewState === 'reading' && (<button onClick={() => setViewState('answering')} disabled={isGameFinished} className="w-full bg-violet-600 text-white py-3 rounded-lg font-semibold hover:bg-violet-700 transition disabled:bg-slate-600">Lanjut untuk Menjawab</button>)}
             {viewState === 'answering' && (
                 <div className="bg-slate-900/50 backdrop-blur-sm border border-violet-700 p-8 rounded-lg shadow-lg">
                     <h2 className="text-2xl font-bold mb-4 font-display tracking-wider">{currentScenario.question}</h2>
-                    <div className="space-y-3">{Object.entries(currentScenario.options).map(([key, value]) => (<button key={key} onClick={() => handleAnswer(key)} className="w-full text-left p-4 rounded-lg border-2 bg-slate-800/50 border-slate-700 hover:bg-violet-900/50 hover:border-violet-600 transition-colors">{value}</button>))}</div>
+                    <div className="space-y-3">{Object.entries(currentScenario.options).map(([key, value]) => (<button key={key} onClick={() => handleAnswer(key)} disabled={isGameFinished} className="w-full text-left p-4 rounded-lg border-2 bg-slate-800/50 border-slate-700 hover:bg-violet-900/50 hover:border-violet-600 transition-colors disabled:bg-slate-800 disabled:cursor-not-allowed">{value}</button>))}</div>
                 </div>
             )}
             {viewState === 'feedback' && (
@@ -191,7 +253,7 @@ export default function GamePlayer({ gameCode, isReviewMode = false }: { gameCod
                         {selectedOption === currentScenario.correct_answer ? 'Jawaban Benar!' : (selectedOption === null ? 'Waktu Habis!' : 'Jawaban Kurang Tepat!')}
                     </div>
                     <p className="p-4 bg-slate-800/50 border border-slate-700 rounded-lg mb-4 text-gray-300"><b>Penjelasan:</b> {currentScenario.explanation}</p>
-                    <button onClick={nextStep} className="w-full bg-violet-600 text-white py-3 rounded-lg font-semibold hover:bg-violet-700 transition">{currentScenarioIndex < game.scenarios.length - 1 ? 'Lanjut ke Skenario Berikutnya' : 'Lihat Hasil Akhir'}</button>
+                    <button onClick={nextStep} disabled={isGameFinished} className="w-full bg-violet-600 text-white py-3 rounded-lg font-semibold hover:bg-violet-700 transition disabled:bg-slate-600">{currentScenarioIndex < game!.scenarios.length - 1 ? 'Lanjut ke Skenario Berikutnya' : 'Lihat Hasil Akhir'}</button>
                 </div>
             )}
         </>
@@ -199,16 +261,15 @@ export default function GamePlayer({ gameCode, isReviewMode = false }: { gameCod
 
     return (
         <div className="max-w-4xl mx-auto p-6 pt-24 min-h-screen">
-            {/* PENAMBAHAN: Menyembunyikan UI game jika mode review */}
             {!isReviewMode && (
                 <>
-                    <div className="flex justify-between items-center mb-4 text-gray-700">
-                        <div className="font-pixel text-white">HP: {hp}/100</div>
+                    <div className="flex justify-between items-center mb-4 text-gray-300">
+                        <div className="font-pixel">HP: {hp}/100</div>
                         {game!.game_type === 'story' && viewState === 'answering' && !isAnswered && <Timer duration={currentScenario.answer_time || 15} onTimeUp={() => handleAnswer(null)} />}
-                        <div className="font-pixel text-white">Skor: {score} XP</div>
+                        <div className="font-pixel">Skor: {score} XP</div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-4 mb-8">
-                        <div className="bg-primary h-4 rounded-full transition-all duration-500" style={{ width: `${progress}%` }}></div>
+                    <div className="w-full bg-slate-700 rounded-full h-4 mb-8">
+                        <div className="bg-violet-500 h-4 rounded-full transition-all duration-500" style={{ width: `${progress}%` }}></div>
                     </div>
                 </>
             )}
