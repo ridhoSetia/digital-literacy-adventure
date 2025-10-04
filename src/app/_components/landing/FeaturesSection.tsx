@@ -2,24 +2,27 @@ import { ShieldCheck, Users, Search } from 'lucide-react';
 
 export default function FeaturesSection() {
     return (
-        <section className="py-16">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <h2 className="text-3xl font-bold text-center mb-12">Fitur Unggulan</h2>
+        <section className="py-20 relative bg-indigo-950/50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h2 className="font-display text-4xl font-bold tracking-wider mb-12 text-white drop-shadow-lg">Fitur Unggulan</h2>
                 <div className="grid md:grid-cols-3 gap-8">
-                    <div className="card-hover bg-white p-8 rounded-xl shadow-lg text-center">
-                        <ShieldCheck className="text-4xl text-primary mb-4 mx-auto" />
-                        <h3 className="text-xl font-semibold mb-3">Keamanan Digital</h3>
-                        <p className="text-gray-600">Pelajari cara melindungi diri dari phishing, malware, dan ancaman digital lainnya.</p>
+                    {/* Card 1 */}
+                    <div className="h-full flex flex-col items-center bg-slate-900/70 backdrop-blur-sm border border-violet-700 p-8 rounded-xl shadow-lg hover:shadow-violet-500/50 hover:-translate-y-2 transition-all duration-300">
+                        <ShieldCheck className="flex-shrink-0 text-5xl text-green-400 mb-4 mx-auto" />
+                        <h3 className="flex-shrink-0 text-lg font-bold font-pixel mb-3 text-gray-100">Keamanan Digital</h3>
+                        <p className="text-gray-400 text-sm leading-relaxed">Pelajari cara melindungi diri dari phishing, malware, dan ancaman digital lainnya.</p>
                     </div>
-                    <div className="card-hover bg-white p-8 rounded-xl shadow-lg text-center">
-                        <Users className="text-4xl text-success mb-4 mx-auto" />
-                        <h3 className="text-xl font-semibold mb-3">Etika Digital</h3>
-                        <p className="text-gray-600">Memahami cara berinteraksi yang baik dan bertanggung jawab di dunia maya.</p>
+                    {/* Card 2 */}
+                    <div className="h-full flex flex-col items-center bg-slate-900/70 backdrop-blur-sm border border-violet-700 p-8 rounded-xl shadow-lg hover:shadow-cyan-500/50 hover:-translate-y-2 transition-all duration-300">
+                        <Users className="flex-shrink-0 text-5xl text-cyan-400 mb-4 mx-auto" />
+                        <h3 className="flex-shrink-0 text-lg font-bold font-pixel mb-3 text-gray-100">Etika Digital</h3>
+                        <p className="text-gray-400 text-sm leading-relaxed">Memahami cara berinteraksi yang baik dan bertanggung jawab di dunia maya.</p>
                     </div>
-                    <div className="card-hover bg-white p-8 rounded-xl shadow-lg text-center">
-                        <Search className="text-4xl text-accent mb-4 mx-auto" />
-                        <h3 className="text-xl font-semibold mb-3">Fact Checking</h3>
-                        <p className="text-gray-600">Kemampuan memverifikasi informasi dan membedakan fakta dari hoaks.</p>
+                    {/* Card 3 */}
+                    <div className="h-full flex flex-col items-center bg-slate-900/70 backdrop-blur-sm border border-violet-700 p-8 rounded-xl shadow-lg hover:shadow-yellow-500/50 hover:-translate-y-2 transition-all duration-300">
+                        <Search className="flex-shrink-0 text-5xl text-yellow-400 mb-4 mx-auto" />
+                        <h3 className="flex-shrink-0 text-lg font-bold font-pixel mb-3 text-gray-100">Fact Checking</h3>
+                        <p className="text-gray-400 text-sm leading-relaxed">Kemampuan memverifikasi informasi dan membedakan fakta dari hoaks.</p>
                     </div>
                 </div>
             </div>

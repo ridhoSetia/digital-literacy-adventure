@@ -1,10 +1,12 @@
 import './globals.css';
-import { Inter } from 'next/font/google';
+import { Inter, Bebas_Neue, Press_Start_2P } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 import AuthProvider from './_contexts/AuthContext';
 import Navbar from './_components/Navbar';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const bebasNeue = Bebas_Neue({ subsets: ['latin'], weight: '400', variable: '--font-bebas-neue' });
+const pressStart2P = Press_Start_2P({ subsets: ['latin'], weight: '400', variable: '--font-press-start-2p' });
 
 export const metadata = {
   title: 'Digital Literacy Adventure',
@@ -14,10 +16,14 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-gray-50 min-h-screen`}>
+      <head>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossOrigin="anonymous" referrerPolicy="no-referrer" />
+      </head>
+      <body className={`${inter.variable} ${bebasNeue.variable} ${pressStart2P.variable} font-sans text-white bg-indigo-950`}>
         <AuthProvider>
           <Navbar />
-          <main>{children}</main>
+          {/* Tag <main> dipindahkan ke komponen halaman masing-masing jika diperlukan */}
+          {children}
           <Toaster position="top-center" reverseOrder={false} />
         </AuthProvider>
       </body>

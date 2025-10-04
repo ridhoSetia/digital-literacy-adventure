@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Explorer - Final Version</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+
+    <style>
+      /* CSS Kustom untuk efek yang lebih canggih */
+      body {
+        background-color: #1e1b4b; /* bg-indigo-950 */
+        overflow-x: hidden; /* Mencegah scroll horizontal */
+      }
+
+      /* Grid dengan perspektif 3D */
+      .perspective-grid {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 50vh;
+        perspective: 200px;
+        z-index: 0;
+      }
+      .grid {
+        width: 150%;
+        height: 150%;
+        margin-left: -25%;
+        background-image:
+          repeating-linear-gradient(to right, #4f46e5, #4f46e5 1px, transparent 1px, transparent 50px),
+          repeating-linear-gradient(to bottom, #4f46e5, #4f46e5 1px, transparent 1px, transparent 50px);
+        background-size: 50px 50px;
+        transform: rotateX(75deg);
+        mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, transparent 80%);
+      }
+
+      /* Tombol Pixel dengan bayangan blok 3D */
+      .btn-pixel {
+        position: relative;
+        display: inline-block;
+        font-family: 'Press Start 2P', cursive;
+        border: 3px solid #111827; /* border-gray-900 */
+        padding: 0.75rem 1.5rem; /* px-6 py-3 */
+        text-transform: uppercase;
+        color: white;
+        transition: transform 0.1s ease-out;
+      }
+      .btn-pixel:hover {
+        transform: translate(2px, 2px);
+      }
+      .btn-pixel:hover::after {
+        transform: translate(-2px, -2px);
+      }
+      .btn-pixel::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        transform: translate(6px, 6px);
+        background-color: var(--shadow-color);
+        z-index: -1;
+        transition: transform 0.1s ease-out;
+        border: 3px solid #111827;
+      }
+    </style>
+
+    <script>
+      // Kustomisasi Tailwind untuk menambahkan font
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              'pixel': ['"Press Start 2P"', 'cursive'],
+              'display': ['"Bebas Neue"', 'sans-serif'],
+              'sans': ['Inter', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
+</head>
+<body class="font-sans text-white">
+    
+    <div class="perspective-grid">
+      <div class="grid"></div>
+    </div>
+    
+    <div class="relative z-10 container mx-auto px-6 py-8 min-h-screen flex flex-col">
+        <header class="flex items-center justify-between text-sm flex-shrink-0">
+            <div class="flex items-center gap-3 font-bold text-lg">
+                <div class="w-4 h-4 bg-white rounded-full"></div>
+                <span>Logo</span>
+            </div>
+            <nav class="hidden md:flex items-center gap-8 font-bold text-white/80">
+                <a href="#" class="hover:text-white">Home</a>
+                <a href="#" class="hover:text-white">About Us</a>
+                <a href="#" class="hover:text-white">Content</a>
+                <a href="#" class="hover:text-white">Contact</a>
+            </nav>
+            <div class="border-2 border-white/50 rounded-lg px-4 py-1.5">
+                <span class="text-white/50">Search...</span>
+            </div>
+        </header>
+
+        <main class="flex-grow flex flex-col items-center justify-center text-center relative">
+            
+            <i class="fa-solid fa-gamepad text-[120px] text-indigo-400/70 absolute top-1/2 left-[15%] transform -translate-y-1/2 -translate-x-1/2 -rotate-12 hidden lg:block"></i>
+            <i class="fa-solid fa-shield-halved text-6xl text-red-500 absolute top-[55%] left-[22%] transform -rotate-12 hidden lg:block"></i>
+            <i class="fa-solid fa-gamepad text-[120px] text-indigo-400/70 absolute top-1/2 right-[15%] transform -translate-y-1/2 translate-x-1/2 rotate-12 hidden lg:block"></i>
+            <i class="fa-solid fa-headphones text-6xl text-red-500 absolute top-[60%] right-[20%] transform rotate-12 hidden lg:block"></i>
+            <div class="w-8 h-6 bg-violet-500 rounded-sm absolute top-[40%] right-[25%] transform -rotate-45 hidden lg:block"></div>
+            <div class="w-6 h-4 bg-violet-500 rounded-sm absolute top-[70%] left-[28%] transform rotate-45 hidden lg:block"></div>
+            
+
+            <div class="relative mt-8">
+                <div class="bg-red-500 rounded-2xl p-3 shadow-2xl">
+                    <div class="bg-red-400 rounded-xl p-1.5">
+                        <div class="bg-slate-200 text-indigo-950 px-6 py-8 sm:px-10 sm:py-12 rounded-lg shadow-inner">
+                            <div class="flex flex-col items-center justify-center leading-none -mt-3">
+                                <span class="font-display text-5xl sm:text-7xl tracking-widest">Digital</span>
+                                <span class="font-display text-5xl sm:text-7xl tracking-widest">Explorer</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <i class="fa-solid fa-bolt text-5xl text-yellow-400 absolute -top-4 -left-8 transform -rotate-12 drop-shadow-md"></i>
+                <i class="fa-solid fa-bolt text-5xl text-yellow-400 absolute -bottom-4 -right-8 transform rotate-[165deg] drop-shadow-md"></i>
+                 <i class="fa-solid fa-bolt text-4xl text-yellow-400 absolute top-0 -right-8 transform rotate-12 drop-shadow-md"></i>
+            </div>
+            
+            <div class="mt-12">
+                <h2 class="font-bold text-xl text-gray-200">A Night of Challenges and Cheers</h2>
+                <p class="mt-2 max-w-lg text-gray-400 text-sm">
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod nonummy nibh euismod consectetuer adipiscing elit.
+                </p>
+                <div class="mt-8 flex items-center justify-center gap-6">
+                    <a href="#" class="btn-pixel bg-violet-600" style="--shadow-color: #4c1d95;">
+                        Option
+                    </a>
+                    <a href="#" class="btn-pixel bg-green-600" style="--shadow-color: #166534;">
+                        Start
+                    </a>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+</body>
+</html>

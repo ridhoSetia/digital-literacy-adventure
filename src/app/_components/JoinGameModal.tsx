@@ -68,8 +68,7 @@ export default function JoinGameModal({ isOpen, onClose }: JoinGameModalProps) {
             <QrScanner 
                 onScanResult={handleScanSuccess} 
                 onScanError={(error) => {
-                    // Anda bisa menangani error di sini, misal menampilkan toast
-                    // console.error("QR Scan Error:", error);
+                    console.error("QR Scan Error:", error);
                 }}
             />
             <button onClick={() => setScannerOpen(false)} className="w-full mt-4 bg-gray-200 py-2 rounded-lg font-semibold hover:bg-gray-300 flex items-center justify-center gap-2">

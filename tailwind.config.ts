@@ -9,7 +9,9 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['var(--font-inter)'],
+        display: ['var(--font-bebas-neue)'],
+        pixel: ['var(--font-press-start-2p)'],
       },
       colors: {
         primary: '#3b82f6',
