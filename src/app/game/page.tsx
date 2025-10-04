@@ -26,20 +26,19 @@ type Game = {
 // --- KOMPONEN KARTU GAME ---
 function GameCard({ game, isCompleted, onReport }: { game: Game; isCompleted: boolean; onReport: (gameId: string, gameTitle: string) => void; }) {
   const cardContent = (
-    <div className={`relative block group border rounded-lg overflow-hidden shadow-sm transition-shadow duration-300 bg-white ${isCompleted ? 'cursor-not-allowed' : 'hover:shadow-xl'}`}>
+    // 1. Jadikan kartu sebagai flex container vertikal dan pastikan tingginya penuh
+    <div className={`relative flex flex-col h-full group border rounded-lg overflow-hidden shadow-sm transition-shadow duration-300 bg-white text-black ${isCompleted ? 'cursor-not-allowed' : 'hover:shadow-xl'}`}>
       {!game.is_official && !isCompleted && (
         <button 
-          onClick={(e) => { 
-            e.preventDefault();
-            onReport(game.id, game.title); 
-          }} 
+          onClick={(e) => { e.preventDefault(); onReport(game.id, game.title); }} 
           className="absolute top-2 right-2 z-10 p-1.5 bg-white bg-opacity-70 rounded-full text-gray-500 hover:bg-red-100 hover:text-red-600 transition" 
           title="Laporkan Game"
         >
           <Flag size={14} />
         </button>
       )}
-      <div className="relative w-full h-48">
+      {/* Pastikan gambar tidak menyusut */}
+      <div className="relative w-full h-48 flex-shrink-0">
         <Image 
           src={game.cover_image_url || '/placeholder.png'} 
           alt={`Cover for ${game.title}`} 
@@ -54,12 +53,16 @@ function GameCard({ game, isCompleted, onReport }: { game: Game; isCompleted: bo
           </div>
         )}
       </div>
-      <div className="p-4 flex flex-col justify-between h-32">
-        <div>
-          <h3 className={`text-lg font-bold truncate ${!isCompleted ? 'group-hover:text-primary' : 'text-gray-500'}`}>{game.title}</h3>
-          <p className="text-sm text-gray-600 mt-1 h-10 overflow-hidden">{game.description || 'Tidak ada deskripsi.'}</p>
+      {/* 2. Jadikan area konten ini sebagai flex container vertikal juga */}
+      <div className="p-4 flex flex-col flex-grow">
+        {/* 3. INTI SOLUSI: Tambahkan `flex-grow` di sini */}
+        {/* Area ini akan "tumbuh" dan mendorong footer ke bawah */}
+        <div className="flex-grow">
+          <h3 className={`text-lg font-bold ${!isCompleted ? 'group-hover:text-primary' : 'text-gray-500'}`}>{game.title}</h3>
+          <p className="text-sm text-gray-600 mt-1 line-clamp-3">{game.description || 'Tidak ada deskripsi.'}</p>
         </div>
-        <div className="flex justify-between items-center text-xs text-gray-500 mt-2">
+        {/* 4. Pastikan footer tidak menyusut dan berada di bawah */}
+        <div className="flex justify-between items-center text-xs text-gray-500 mt-4 pt-4 border-t flex-shrink-0">
           <span>Oleh: {game.profiles?.username || 'Admin'}</span>
           <span className="flex items-center gap-1 font-medium">
             <Play size={12} />
@@ -71,9 +74,9 @@ function GameCard({ game, isCompleted, onReport }: { game: Game; isCompleted: bo
   );
   
   return isCompleted ? (
-    <div title="Anda sudah menyelesaikan game ini">{cardContent}</div>
+    <div title="Anda sudah menyelesaikan game ini" className="h-full">{cardContent}</div>
   ) : (
-    <Link href={`/play/${game.game_code}`}>{cardContent}</Link>
+    <Link href={`/play/${game.game_code}`} className="block h-full">{cardContent}</Link>
   );
 }
 
