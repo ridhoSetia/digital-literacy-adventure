@@ -7,6 +7,7 @@ import { useAuth } from '../_contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { Plus, Save, Trash2, ArrowLeft, Upload, FileText, MessageSquare, ShieldCheck, Image as ImageIcon } from 'lucide-react';
 import GameShareModal from '../_components/GameShareModal';
+import Image from 'next/image'; // <-- menambah import ini
 
 // Tipe data
 type ScenarioOption = { [key: string]: string };
@@ -120,7 +121,7 @@ export default function CreateGamePage() {
             })
         );
         
-        // PERUBAIKAN DI SINI
+        // PERBAIKAN 1: Hapus `as any`
         const { error: scenariosError } = await supabase.from('scenarios').insert(scenariosToInsert);
 
         toast.dismiss();
@@ -210,18 +211,22 @@ export default function CreateGamePage() {
                             <hr className="border-slate-700"/>
                             
                             {scenarios.map((scenario, index) => (
-                                <div key={index} className="scenario-item bg-slate-800/50 p-6 rounded-lg border border-slate-700">
-                                    <div className="flex justify-between items-center mb-4">
+                                <div key={index} className="scenario-item bg-slate-800/50 p-6 rounded-lg border border-slate-700">                                    <div className="flex justify-between items-center mb-4">
                                         <h3 className="text-lg font-semibold font-display tracking-wide">Skenario {index + 1}</h3>
                                         {scenarios.length > 1 && (<button type="button" onClick={() => removeScenario(index)} className="text-red-500 hover:text-red-400"><Trash2 size={18} /></button>)}
                                     </div>
                                     {/* KONTEN FORM SKENARIO YANG DIPERBARUI */}
                                     <div className="space-y-4">
-                                        <div>
+                                    <div>
                                             <label className="block text-sm font-medium text-gray-400">Gambar Skenario (Opsional, Maks 200KB)</label>
                                             <div className="mt-2 flex items-center gap-4">
-                                                <div className="w-24 h-16 bg-slate-700 border border-slate-600 rounded-md flex items-center justify-center">
-                                                    {scenario.imageFile ? (<img src={URL.createObjectURL(scenario.imageFile)} alt="preview" className="w-full h-full object-cover rounded-md"/>) : (<ImageIcon className="h-8 w-8 text-gray-500"/>)}
+                                                <div className="relative w-24 h-16 bg-slate-700 border border-slate-600 rounded-md flex items-center justify-center">
+                                                    {/* PERBAIKAN 2: Ganti <img> dengan <Image> */}
+                                                    {scenario.imageFile ? (
+                                                        <Image src={URL.createObjectURL(scenario.imageFile)} alt="preview" layout="fill" className="object-cover rounded-md"/>
+                                                    ) : (
+                                                        <ImageIcon className="h-8 w-8 text-gray-500"/>
+                                                    )}
                                                 </div>
                                                 <label htmlFor={`scenario-image-${index}`} className="cursor-pointer text-sm text-violet-400 font-semibold hover:underline">
                                                     Upload gambar
