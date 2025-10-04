@@ -45,7 +45,7 @@ export default function AdminDashboard() {
         if (error) {
             toast.error("Gagal memuat laporan.");
         } else {
-            setReports(reportData as any); // Gunakan 'as any' untuk sementara bypass error TS yang membingungkan
+            setReports(reportData as any);
         }
         setLoading(false);
     }, [user, router, supabase]);
@@ -60,13 +60,9 @@ export default function AdminDashboard() {
     }, [user, router, fetchAdminData]);
 
     const handleDismissReport = async (reportId: string, gameId: string) => {
-        // 1. Ubah status laporan menjadi 'dismissed'
         await supabase.from('reports').update({ status: 'dismissed' }).eq('id', reportId);
-        // 2. Kembalikan status game menjadi tidak 'under review' agar muncul lagi
         await supabase.from('games').update({ is_under_review: false }).eq('id', gameId);
-
         toast.success("Laporan diabaikan dan game dikembalikan.");
-        // Hapus laporan dari tampilan UI
         setReports(reports.filter(r => r.id !== reportId));
     };
 
@@ -75,91 +71,78 @@ export default function AdminDashboard() {
             return;
         }
 
-        // 1. Hapus game dari tabel 'games' (RLS sudah memperbolehkan admin)
         const { error } = await supabase.from('games').delete().eq('id', gameId);
 
         if (error) {
             toast.error(`Gagal menghapus game: ${error.message}`);
         } else {
-            // 2. Jika berhasil, ubah status laporan menjadi 'resolved'
             await supabase.from('reports').update({ status: 'resolved' }).eq('id', reportId);
             toast.success("Game berhasil dihapus secara permanen.");
-            // Hapus laporan dari tampilan UI
             setReports(reports.filter(r => r.id !== reportId));
         }
     };
 
     if (loading) {
-        return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin h-10 w-10 text-primary" /></div>;
+        return <div className="flex min-h-screen items-center justify-center"><Loader2 className="animate-spin h-10 w-10 text-violet-400" /></div>;
     }
     if (!isAdmin) { return null; }
 
     return (
         <>
-            <div className="max-w-7xl mx-auto p-8">
-                <h1 className="text-3xl font-bold mb-6">Dashboard Admin - Laporan Game</h1>
-                <div className="space-y-4">
-                    {reports.length > 0 ? (
-                        reports.map(report => {
-                            // --- LOGIKA ANTI-ERROR DIMULAI DI SINI ---
+            <div className="min-h-screen text-white pt-24">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+                    <h1 className="text-4xl font-bold mb-8 font-display tracking-wider text-center">Dashboard Admin - Laporan Game</h1>
+                    <div className="bg-slate-900/50 backdrop-blur-sm border border-violet-700 rounded-xl shadow-lg p-6 sm:p-8">
+                        <h2 className="text-2xl font-semibold mb-6 text-gray-200">Laporan Game Tertunda</h2>
+                        <div className="space-y-4">
+                            {reports.length > 0 ? (
+                                reports.map(report => {
+                                    if (!report.games) return null;
+                                    const game = Array.isArray(report.games) ? report.games[0] : report.games;
+                                    if (!game) return null;
 
-                            // 1. Cek apakah report.games ada isinya.
-                            if (!report.games) {
-                                return null;
-                            }
-
-                            // 2. Logika Kunci: Cek apakah 'games' itu array atau objek.
-                            //    Apapun bentuknya, ambil objek game yang benar.
-                            const game = Array.isArray(report.games) ? report.games[0] : report.games;
-
-                            // 3. Pengecekan keamanan terakhir, jika game tetap tidak ada.
-                            if (!game) {
-                                return null;
-                            }
-
-                            return (
-                                <div key={report.id} className="bg-white p-4 border rounded-lg shadow-sm">
-                                    <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-4">
-                                        <div className="flex-grow">
-                                            <h3 className="font-bold text-lg">
-                                                <Link href={`/play/${game.game_code}`} className="hover:underline text-primary" target="_blank" rel="noopener noreferrer">
-                                                    {game.title}
-                                                </Link>
-                                            </h3>
-                                            <p className="text-gray-600 mt-2"><b>Alasan Laporan:</b> {report.reason || 'Tidak ada alasan.'}</p>
+                                    return (
+                                        <div key={report.id} className="bg-slate-800/50 p-4 border border-slate-700 rounded-lg shadow-sm">
+                                            <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-4">
+                                                <div className="flex-grow">
+                                                    <h3 className="font-bold text-lg text-gray-100">
+                                                        <Link href={`/play/${game.game_code}`} className="hover:underline text-violet-400" target="_blank" rel="noopener noreferrer">
+                                                            {game.title}
+                                                        </Link>
+                                                    </h3>
+                                                    <p className="text-gray-400 mt-2"><b className="text-gray-300">Alasan Laporan:</b> {report.reason || 'Tidak ada alasan.'}</p>
+                                                </div>
+                                                <div className="flex items-center gap-2 flex-shrink-0 mt-2 sm:mt-0">
+                                                    <button
+                                                        onClick={() => setReviewingGameCode(game.game_code)}
+                                                        className="bg-blue-600 text-white px-3 py-1 rounded text-sm font-semibold hover:bg-blue-700 transition flex items-center gap-1.5"
+                                                    >
+                                                        <Eye size={14} /> Review
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDismissReport(report.id, game.id)}
+                                                        className="bg-slate-600 text-white px-3 py-1 rounded text-sm font-semibold hover:bg-slate-700 transition"
+                                                    >
+                                                        Abaikan
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteGame(game.id, report.id)}
+                                                        className="bg-red-600 text-white px-3 py-1 rounded text-sm font-semibold hover:bg-red-700 transition"
+                                                    >
+                                                        Hapus Game
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2 flex-shrink-0 mt-2 sm:mt-0">                                            <button
-                                            onClick={() => setReviewingGameCode(game.game_code)}
-                                            className="bg-blue-500 text-white px-3 py-1 rounded text-sm font-semibold hover:bg-blue-600 flex items-center gap-1.5"
-                                        >
-                                            <Eye size={14} /> Review
-                                        </button>
-
-                                            {/* Pastikan onClick memanggil fungsi yang benar */}
-                                            <button
-                                                onClick={() => handleDismissReport(report.id, game.id)}
-                                                className="bg-gray-200 px-3 py-1 rounded text-sm font-semibold hover:bg-gray-300"
-                                            >
-                                                Abaikan
-                                            </button>
-
-                                            {/* Pastikan onClick memanggil fungsi yang benar */}
-                                            <button
-                                                onClick={() => handleDeleteGame(game.id, report.id)}
-                                                className="bg-red-500 text-white px-3 py-1 rounded text-sm font-semibold hover:bg-red-600"
-                                            >
-                                                Hapus Game
-                                            </button>
-                                        </div>
-                                    </div>
+                                    );
+                                })
+                            ) : (
+                                <div className="text-center text-gray-500 p-8 border-2 border-dashed border-slate-700 rounded-lg">
+                                    <p>Tidak ada laporan yang perlu ditinjau.</p>
                                 </div>
-                            );
-                        })
-                    ) : (
-                        <div className="text-center text-gray-500 p-8 border-2 border-dashed rounded-lg">
-                            <p>Tidak ada laporan yang perlu ditinjau.</p>
+                            )}
                         </div>
-                    )}
+                    </div>
                 </div>
             </div>
 

@@ -17,9 +17,9 @@ type ResultData = {
 
 // Fungsi untuk menentukan kategori berdasarkan skor
 const getScoreCategory = (score: number) => {
-  if (score < 50) return { name: 'Pemula Digital', color: 'text-gray-500' };
-  if (score < 100) return { name: 'Penjelajah Cerdas', color: 'text-blue-500' };
-  return { name: 'Master Literasi', color: 'text-amber-500' };
+  if (score < 50) return { name: 'Pemula Digital', color: 'text-gray-400' };
+  if (score < 100) return { name: 'Penjelajah Cerdas', color: 'text-cyan-400' };
+  return { name: 'Master Literasi', color: 'text-yellow-400' };
 };
 
 export default function ResultPage() {
@@ -59,11 +59,11 @@ export default function ResultPage() {
     }, [score_id, router, supabase]);
     
     if (loading) {
-        return <div className="flex justify-center items-center h-screen">Memuat hasil...</div>;
+        return <div className="flex justify-center items-center h-screen text-white">Memuat hasil...</div>;
     }
 
     if (!result) {
-        return <div className="flex justify-center items-center h-screen">Hasil tidak ditemukan.</div>;
+        return <div className="flex justify-center items-center h-screen text-white">Hasil tidak ditemukan.</div>;
     }
 
     const category = getScoreCategory(result.score_achieved);
@@ -71,28 +71,30 @@ export default function ResultPage() {
     return (
         <>
             {showConfetti && <Confetti recycle={false} onConfettiComplete={() => setShowConfetti(false)} />}
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full text-center transform transition-all hover:scale-105 duration-500">
-                    <Award className="mx-auto h-20 w-20 text-amber-400 mb-4" />
-                    <h1 className="text-4xl font-extrabold text-gray-800 mb-2">Selamat!</h1>
-                    <p className="text-gray-600 mb-6">
+            {/* Latar belakang diubah agar sesuai tema */}
+            <div className="min-h-screen flex items-center justify-center p-4 pt-20">
+                {/* Kartu utama diubah ke style gelap */}
+                <div className="bg-slate-900/70 backdrop-blur-sm border border-violet-700 rounded-2xl shadow-2xl shadow-violet-500/20 p-8 max-w-2xl w-full text-center">
+                    <Award className="mx-auto h-20 w-20 text-yellow-400 mb-4" />
+                    <h1 className="text-4xl font-extrabold text-white mb-2 font-display tracking-wider">Selamat!</h1>
+                    <p className="text-gray-400 mb-6">
                         Anda telah menyelesaikan game "{result.games?.[0]?.title || 'ini'}" dengan gemilang.
                     </p>
 
-                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 mb-8">
-                        <p className="text-sm text-gray-500">SKOR AKHIR ANDA</p>
-                        <p className="text-7xl font-bold text-primary my-2">{result.score_achieved}</p>
-                        <div className={`inline-block px-4 py-1 rounded-full text-sm font-semibold ${category.color} bg-opacity-10 ${category.color.replace('text-', 'bg-')}`}>
+                    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 mb-8">
+                        <p className="text-sm text-gray-400 font-pixel">SKOR AKHIR ANDA</p>
+                        <p className="text-7xl font-bold text-cyan-400 my-2 font-pixel drop-shadow-lg">{result.score_achieved}</p>
+                        <div className={`inline-block px-4 py-1 rounded-full text-sm font-semibold ${category.color}`}>
                             {category.name}
                         </div>
                     </div>
 
-                    <h3 className="text-lg font-semibold mb-4">Langkah Selanjutnya?</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Link href="/game" className="flex items-center justify-center gap-2 w-full bg-primary text-white py-3 rounded-lg font-semibold hover:bg-secondary transition-transform transform hover:-translate-y-1">
+                    <h3 className="text-white text-lg font-semibold mb-4 font-display tracking-wide">Langkah Selanjutnya?</h3>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <Link href="/game" className="flex items-center justify-center gap-2 w-full bg-violet-600 text-white py-3 rounded-lg font-semibold hover:bg-violet-700 transition-transform transform hover:-translate-y-1">
                             <ArrowLeft size={18} /> Kembali ke Daftar Game
                         </Link>
-                         <Link href="/leaderboard" className="flex items-center justify-center gap-2 w-full bg-amber-500 text-white py-3 rounded-lg font-semibold hover:bg-amber-600 transition-transform transform hover:-translate-y-1">
+                         <Link href="/leaderboard" className="flex items-center justify-center gap-2 w-full bg-yellow-500 text-black py-3 rounded-lg font-semibold hover:bg-yellow-600 transition-transform transform hover:-translate-y-1">
                            <Trophy size={18} /> Lihat Leaderboard
                         </Link>
                     </div>

@@ -140,33 +140,155 @@ export default function CreateGamePage() {
 
     return (
         <>
-            <div className="min-h-screen bg-gray-50">
-                <div className="max-w-4xl mx-auto p-6">
-                    <div className="bg-white rounded-xl shadow-lg p-8">
-                        <h2 className="text-3xl font-bold mb-8">Buat Game Literasi Digital</h2>
-                        <div className="mb-6"><label className="block text-sm font-medium text-gray-700 mb-2">Tipe Game</label><div className="flex gap-4"><button type="button" onClick={() => setGameType('quiz')} className={`flex-1 p-4 border-2 rounded-lg flex items-center gap-3 transition ${gameType === 'quiz' ? 'border-primary bg-blue-50' : 'hover:border-gray-400'}`}><MessageSquare className={gameType === 'quiz' ? 'text-primary' : 'text-gray-500'}/><div ><p className="font-semibold">Kuis Pilihan Ganda</p><p className="text-xs text-gray-500">Format tanya jawab klasik.</p></div></button><button type="button" onClick={() => setGameType('story')} className={`flex-1 p-4 border-2 rounded-lg flex items-center gap-3 transition ${gameType === 'story' ? 'border-primary bg-blue-50' : 'hover:border-gray-400'}`}><FileText className={gameType === 'story' ? 'text-primary' : 'text-gray-500'}/><div ><p className="font-semibold">Mode Cerita</p><p className="text-xs text-gray-500">Format narasi interaktif.</p></div></button></div></div>
+            <div className="min-h-screen text-white pt-24">
+                <div className="max-w-4xl mx-auto px-4 pb-8 sm:px-6 lg:px-8">
+                    <div className="bg-slate-900/50 backdrop-blur-sm border border-violet-700 rounded-xl shadow-lg p-8">
+                        <h2 className="text-4xl font-bold mb-8 font-display tracking-wider text-center">Buat Game Literasi Digital</h2>
+                        
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-gray-400 mb-2">Tipe Game</label>
+                            <div className="flex gap-4">
+                                <button type="button" onClick={() => setGameType('quiz')} className={`flex-1 p-4 border-2 rounded-lg flex items-center gap-3 transition-colors duration-200 ${gameType === 'quiz' ? 'border-violet-500 bg-slate-800' : 'border-slate-700 hover:border-slate-500'}`}>
+                                    <MessageSquare className={gameType === 'quiz' ? 'text-violet-400' : 'text-gray-500'}/>
+                                    <div>
+                                        <p className="font-semibold text-left">Kuis Pilihan Ganda</p>
+                                        <p className="text-xs text-gray-400 text-left">Format tanya jawab klasik.</p>
+                                    </div>
+                                </button>
+                                <button type="button" onClick={() => setGameType('story')} className={`flex-1 p-4 border-2 rounded-lg flex items-center gap-3 transition-colors duration-200 ${gameType === 'story' ? 'border-violet-500 bg-slate-800' : 'border-slate-700 hover:border-slate-500'}`}>
+                                    <FileText className={gameType === 'story' ? 'text-violet-400' : 'text-gray-500'}/>
+                                    <div>
+                                        <p className="font-semibold text-left">Mode Cerita</p>
+                                        <p className="text-xs text-gray-400 text-left">Format narasi interaktif.</p>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
                         <form onSubmit={handleSaveGame} className="space-y-6">
-                            <div><label className="block text-sm font-medium text-gray-700 mb-2">Gambar Sampul</label><div className="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10"><div className="text-center"><Upload className="mx-auto h-12 w-12 text-gray-300" /><div className="mt-4 flex text-sm leading-6 text-gray-600"><label htmlFor="file-upload" className="relative cursor-pointer rounded-md bg-white font-semibold text-primary focus-within:outline-none focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 hover:text-secondary"><span>Upload file</span><input id="file-upload" name="file-upload" type="file" className="sr-only" accept="image/png, image/jpeg, image/webp" onChange={(e) => setCoverImage(e.target.files ? e.target.files[0] : null)} /></label><p className="pl-1">atau drag and drop</p></div><p className="text-xs leading-5 text-gray-600">PNG, JPG, WEBP hingga 2MB</p>{coverImage && <p className="text-sm text-green-600 mt-2">File dipilih: {coverImage.name}</p>}</div></div></div>
-                            <div><label className="block text-sm font-medium text-gray-700 mb-2">Judul Game</label><input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg" required placeholder="Contoh: Petualangan Keamanan Sosmed" /></div>
-                            <div><label className="block text-sm font-medium text-gray-700 mb-2">Deskripsi</label><textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="Jelaskan sedikit tentang game Anda..."></textarea></div>
-                            {isAdmin && (<div className="p-4 bg-blue-50 border border-blue-200 rounded-lg"><label htmlFor="is_official" className="flex items-center gap-3 cursor-pointer"><input type="checkbox" id="is_official" checked={isOfficial} onChange={(e) => setIsOfficial(e.target.checked)} className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary" /><div className="flex items-center gap-2"><ShieldCheck className="text-primary" size={20}/><span className="font-semibold text-primary">Jadikan Game Resmi (Khusus Admin)</span></div></label></div>)}
-                            <hr />
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Gambar Sampul</label>
+                                <div className="mt-2 flex justify-center rounded-lg border border-dashed border-slate-600 px-6 py-10">
+                                    <div className="text-center">
+                                        <Upload className="mx-auto h-12 w-12 text-gray-500" />
+                                        <div className="mt-4 flex text-sm leading-6 text-gray-400">
+                                            <label htmlFor="file-upload" className="relative cursor-pointer rounded-md font-semibold text-violet-400 focus-within:outline-none hover:text-violet-300">
+                                                <span>Upload file</span>
+                                                <input id="file-upload" name="file-upload" type="file" className="sr-only" accept="image/png, image/jpeg, image/webp" onChange={(e) => setCoverImage(e.target.files ? e.target.files[0] : null)} />
+                                            </label>
+                                            <p className="pl-1">atau drag and drop</p>
+                                        </div>
+                                        <p className="text-xs leading-5 text-gray-500">PNG, JPG, WEBP hingga 2MB</p>
+                                        {coverImage && <p className="text-sm text-green-400 mt-2">File dipilih: {coverImage.name}</p>}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Judul Game</label>
+                                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full bg-slate-800 border-slate-700 px-4 py-2 border rounded-lg focus:ring-violet-500 focus:border-violet-500" required placeholder="Contoh: Petualangan Keamanan Sosmed" />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Deskripsi</label>
+                                <textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} className="w-full bg-slate-800 border-slate-700 px-4 py-2 border rounded-lg focus:ring-violet-500 focus:border-violet-500" placeholder="Jelaskan sedikit tentang game Anda..."></textarea>
+                            </div>
+
+                            {isAdmin && (
+                                <div className="p-4 bg-slate-800/50 border border-blue-500 rounded-lg">
+                                    <label htmlFor="is_official" className="flex items-center gap-3 cursor-pointer">
+                                        <input type="checkbox" id="is_official" checked={isOfficial} onChange={(e) => setIsOfficial(e.target.checked)} className="h-5 w-5 rounded border-gray-500 bg-slate-700 text-violet-500 focus:ring-violet-500" />
+                                        <div className="flex items-center gap-2">
+                                            <ShieldCheck className="text-blue-400" size={20}/>
+                                            <span className="font-semibold text-blue-300">Jadikan Game Resmi (Khusus Admin)</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            )}
+                            
+                            <hr className="border-slate-700"/>
+                            
                             {scenarios.map((scenario, index) => (
-                                <div key={index} className="scenario-item bg-gray-50 p-6 rounded-lg border">
-                                    <div className="flex justify-between items-center mb-4"><h3 className="text-lg font-semibold">Skenario {index + 1}</h3>{scenarios.length > 1 && (<button type="button" onClick={() => removeScenario(index)} className="text-red-500 hover:text-red-700"><Trash2 size={18} /></button>)}</div>
+                                <div key={index} className="scenario-item bg-slate-800/50 p-6 rounded-lg border border-slate-700">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-lg font-semibold font-display tracking-wide">Skenario {index + 1}</h3>
+                                        {scenarios.length > 1 && (<button type="button" onClick={() => removeScenario(index)} className="text-red-500 hover:text-red-400"><Trash2 size={18} /></button>)}
+                                    </div>
+                                    {/* KONTEN FORM SKENARIO YANG DIPERBARUI */}
                                     <div className="space-y-4">
-                                        <div><label className="block text-sm font-medium text-gray-700">Gambar Skenario (Opsional, Maks 200KB)</label><div className="mt-2 flex items-center gap-4"><div className="w-24 h-16 bg-gray-200 rounded-md flex items-center justify-center"><>{scenario.imageFile ? (<img src={URL.createObjectURL(scenario.imageFile)} alt="preview" className="w-full h-full object-cover rounded-md"/>) : (<ImageIcon className="h-8 w-8 text-gray-400"/>)}</></div><label htmlFor={`scenario-image-${index}`} className="cursor-pointer text-sm text-primary font-semibold hover:underline">Upload gambar<input id={`scenario-image-${index}`} type="file" className="sr-only" accept="image/png, image/jpeg, image/webp" onChange={(e) => handleScenarioImageChange(e, index)} /></label></div></div>
-                                        {gameType === 'story' && (<><label className="block text-sm font-medium text-gray-700">Teks Narasi/Cerita</label><textarea rows={5} value={scenario.situation || ''} onChange={(e) => handleScenarioChange(index, 'situation', e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg" required></textarea><label className="block text-sm font-medium text-gray-700">Pertanyaan</label><input type="text" value={scenario.question || ''} onChange={(e) => handleScenarioChange(index, 'question', e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg" required /><label className="block text-sm font-medium text-gray-700">Frasa untuk di-Highlight (Stabilo)</label><input type="text" value={scenario.highlight_phrase || ''} onChange={(e) => handleScenarioChange(index, 'highlight_phrase', e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="Harus sama persis dengan teks di narasi" required /></>)}
-                                        {gameType === 'quiz' && (<><label className="block text-sm font-medium text-gray-700">Pertanyaan Kuis</label><textarea rows={3} value={scenario.situation || ''} onChange={(e) => handleScenarioChange(index, 'situation', e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg" required></textarea></>)}
-                                        <div className="grid md:grid-cols-2 gap-4">{['A', 'B', 'C', 'D'].map(optionKey => (<div key={optionKey}><label className="block text-sm font-medium text-gray-700 mb-2">Pilihan {optionKey}</label><input type="text" value={scenario.options?.[optionKey] || ''} onChange={(e) => handleOptionChange(index, optionKey, e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg" required={optionKey === 'A' || optionKey === 'B'} /></div>))}</div>
-                                        <div className="grid md:grid-cols-2 gap-4"><div><label className="block text-sm font-medium text-gray-700 mb-2">Jawaban Benar</label><select value={scenario.correct_answer} onChange={(e) => handleScenarioChange(index, 'correct_answer', e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg" required>{Object.keys(scenario.options || {}).filter(key => scenario.options?.[key]).map(key => (<option key={key} value={key}>Pilihan {key}</option>))}</select></div><div><label className="block text-sm font-medium text-gray-700 mb-2">Poin Reward</label><input type="number" min="10" value={scenario.points || 20} onChange={(e) => handleScenarioChange(index, 'points', parseInt(e.target.value))} className="w-full px-4 py-2 border border-gray-300 rounded-lg" required /></div></div>
-                                         {gameType === 'story' && (<div><label className="block text-sm font-medium text-gray-700 mb-2">Waktu Menjawab (detik)</label><input type="number" min="5" value={scenario.answer_time || 15} onChange={(e) => handleScenarioChange(index, 'answer_time', parseInt(e.target.value))} className="w-full px-4 py-2 border border-gray-300 rounded-lg" required /></div>)}
-                                        <textarea rows={2} value={scenario.explanation || ''} onChange={(e) => handleScenarioChange(index, 'explanation', e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="Jelaskan mengapa jawaban tersebut benar..."></textarea>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-400">Gambar Skenario (Opsional, Maks 200KB)</label>
+                                            <div className="mt-2 flex items-center gap-4">
+                                                <div className="w-24 h-16 bg-slate-700 border border-slate-600 rounded-md flex items-center justify-center">
+                                                    {scenario.imageFile ? (<img src={URL.createObjectURL(scenario.imageFile)} alt="preview" className="w-full h-full object-cover rounded-md"/>) : (<ImageIcon className="h-8 w-8 text-gray-500"/>)}
+                                                </div>
+                                                <label htmlFor={`scenario-image-${index}`} className="cursor-pointer text-sm text-violet-400 font-semibold hover:underline">
+                                                    Upload gambar
+                                                    <input id={`scenario-image-${index}`} type="file" className="sr-only" accept="image/png, image/jpeg, image/webp" onChange={(e) => handleScenarioImageChange(e, index)} />
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        {gameType === 'story' && (<>
+                                            <label className="block text-sm font-medium text-gray-400">Teks Narasi/Cerita</label>
+                                            <textarea rows={5} value={scenario.situation || ''} onChange={(e) => handleScenarioChange(index, 'situation', e.target.value)} className="w-full bg-slate-800 border-slate-700 px-4 py-2 border rounded-lg focus:ring-violet-500 focus:border-violet-500" required></textarea>
+                                            <label className="block text-sm font-medium text-gray-400">Pertanyaan</label>
+                                            <input type="text" value={scenario.question || ''} onChange={(e) => handleScenarioChange(index, 'question', e.target.value)} className="w-full bg-slate-800 border-slate-700 px-4 py-2 border rounded-lg focus:ring-violet-500 focus:border-violet-500" required />
+                                            <label className="block text-sm font-medium text-gray-400">Frasa untuk di-Highlight (Stabilo)</label>
+                                            <input type="text" value={scenario.highlight_phrase || ''} onChange={(e) => handleScenarioChange(index, 'highlight_phrase', e.target.value)} className="w-full bg-slate-800 border-slate-700 px-4 py-2 border rounded-lg focus:ring-violet-500 focus:border-violet-500" placeholder="Harus sama persis dengan teks di narasi" required />
+                                        </>)}
+                                        
+                                        {gameType === 'quiz' && (<>
+                                            <label className="block text-sm font-medium text-gray-400">Pertanyaan Kuis</label>
+                                            <textarea rows={3} value={scenario.situation || ''} onChange={(e) => handleScenarioChange(index, 'situation', e.target.value)} className="w-full bg-slate-800 border-slate-700 px-4 py-2 border rounded-lg focus:ring-violet-500 focus:border-violet-500" required></textarea>
+                                        </>)}
+                                        
+                                        <div className="flex flex-col md:flex-row gap-4">
+                                            {['A', 'B', 'C', 'D'].map(optionKey => (
+                                                <div key={optionKey}>
+                                                    <label className="block text-sm font-medium text-gray-400 mb-2">Pilihan {optionKey}</label>
+                                                    <input type="text" value={scenario.options?.[optionKey] || ''} onChange={(e) => handleOptionChange(index, optionKey, e.target.value)} className="w-full bg-slate-800 border-slate-700 px-4 py-2 border rounded-lg focus:ring-violet-500 focus:border-violet-500" required={optionKey === 'A' || optionKey === 'B'} />
+                                                </div>
+                                            ))}
+                                        </div>
+                                        
+                                        <div className="flex flex-col md:flex-row gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-400 mb-2">Jawaban Benar</label>
+                                                <select value={scenario.correct_answer} onChange={(e) => handleScenarioChange(index, 'correct_answer', e.target.value)} className="w-full bg-slate-800 border-slate-700 px-4 py-2 border rounded-lg focus:ring-violet-500 focus:border-violet-500" required>
+                                                    {Object.keys(scenario.options || {}).filter(key => scenario.options?.[key]).map(key => (<option key={key} value={key} className="bg-slate-800">Pilihan {key}</option>))}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-400 mb-2">Poin Reward</label>
+                                                <input type="number" min="10" value={scenario.points || 20} onChange={(e) => handleScenarioChange(index, 'points', parseInt(e.target.value))} className="w-full bg-slate-800 border-slate-700 px-4 py-2 border rounded-lg focus:ring-violet-500 focus:border-violet-500" required />
+                                            </div>
+                                        </div>
+                                        
+                                        {gameType === 'story' && (
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-400 mb-2">Waktu Menjawab (detik)</label>
+                                                <input type="number" min="5" value={scenario.answer_time || 15} onChange={(e) => handleScenarioChange(index, 'answer_time', parseInt(e.target.value))} className="w-full bg-slate-800 border-slate-700 px-4 py-2 border rounded-lg focus:ring-violet-500 focus:border-violet-500" required />
+                                            </div>
+                                        )}
+                                        
+                                        <textarea rows={2} value={scenario.explanation || ''} onChange={(e) => handleScenarioChange(index, 'explanation', e.target.value)} className="w-full bg-slate-800 border-slate-700 px-4 py-2 border rounded-lg focus:ring-violet-500 focus:border-violet-500" placeholder="Jelaskan mengapa jawaban tersebut benar..."></textarea>
                                     </div>
                                 </div>
                             ))}
-                            <button type="button" onClick={addScenario} className="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition flex items-center justify-center gap-2"><Plus size={18} /> Tambah Skenario</button>
-                            <div className="flex justify-end space-x-4 pt-4"><button type="button" onClick={() => router.push('/')} className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center gap-2"><ArrowLeft size={18} /> Kembali</button><button type="submit" disabled={loading} className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-secondary transition flex items-center gap-2 disabled:bg-gray-400"><Save size={18} /> {loading ? 'Menyimpan...' : 'Simpan Game'}</button></div>
+                            
+                            <button type="button" onClick={addScenario} className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2 font-semibold">
+                                <Plus size={18} /> Tambah Skenario
+                            </button>
+                            
+                            <div className="flex justify-end space-x-4 pt-4">
+                                <button type="button" onClick={() => router.push('/game')} className="px-6 py-3 border border-slate-600 rounded-lg hover:bg-slate-800 transition flex items-center gap-2 font-semibold">
+                                    <ArrowLeft size={18} /> Kembali
+                                </button>
+                                <button type="submit" disabled={loading} className="bg-violet-600 text-white px-6 py-3 rounded-lg hover:bg-violet-700 transition flex items-center gap-2 disabled:bg-slate-600 font-semibold">
+                                    <Save size={18} /> {loading ? 'Menyimpan...' : 'Simpan Game'}
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>

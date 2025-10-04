@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase-client';
 import { useAuth } from '../_contexts/AuthContext';
 import toast from 'react-hot-toast';
 
-// Tipe data untuk Game
+// Tipe data untuk Game (Tidak diubah)
 type Game = {
   id: string;
   title: string;
@@ -23,22 +23,23 @@ type Game = {
   profiles: { username: string } | null;
 };
 
-// --- KOMPONEN KARTU GAME ---
+// --- KOMPONEN KARTU GAME (STYLING BARU) ---
 function GameCard({ game, isCompleted, onReport }: { game: Game; isCompleted: boolean; onReport: (gameId: string, gameTitle: string) => void; }) {
   const cardContent = (
-    // 1. Jadikan kartu sebagai flex container vertikal dan pastikan tingginya penuh
-    <div className={`relative flex flex-col h-full group border rounded-lg overflow-hidden shadow-sm transition-shadow duration-300 bg-white text-black ${isCompleted ? 'cursor-not-allowed' : 'hover:shadow-xl'}`}>
+    <div className={`w-72 flex-1 flex-grow relative block group border rounded-lg overflow-hidden shadow-sm transition-shadow duration-300 bg-slate-900/70 backdrop-blur-sm border-violet-700 text-white ${isCompleted ? 'cursor-not-allowed' : 'hover:shadow-violet-500/50'}`}>
       {!game.is_official && !isCompleted && (
         <button 
-          onClick={(e) => { e.preventDefault(); onReport(game.id, game.title); }} 
-          className="absolute top-2 right-2 z-10 p-1.5 bg-white bg-opacity-70 rounded-full text-gray-500 hover:bg-red-100 hover:text-red-600 transition" 
+          onClick={(e) => { 
+            e.preventDefault();
+            onReport(game.id, game.title); 
+          }} 
+          className="absolute top-2 right-2 z-10 p-1.5 bg-slate-800 bg-opacity-70 rounded-full text-gray-400 hover:bg-red-900/50 hover:text-white transition" 
           title="Laporkan Game"
         >
           <Flag size={14} />
         </button>
       )}
-      {/* Pastikan gambar tidak menyusut */}
-      <div className="relative w-full h-48 flex-shrink-0">
+      <div className="relative w-full h-48">
         <Image 
           src={game.cover_image_url || '/placeholder.png'} 
           alt={`Cover for ${game.title}`} 
@@ -48,21 +49,17 @@ function GameCard({ game, isCompleted, onReport }: { game: Game; isCompleted: bo
         />
         {isCompleted && (
           <div className="absolute inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center text-white p-4">
-            <CheckCircle size={48} className="mb-2" />
+            <CheckCircle size={48} className="mb-2 text-green-400" />
             <span className="font-bold text-lg">Selesai</span>
           </div>
         )}
       </div>
-      {/* 2. Jadikan area konten ini sebagai flex container vertikal juga */}
-      <div className="p-4 flex flex-col flex-grow">
-        {/* 3. INTI SOLUSI: Tambahkan `flex-grow` di sini */}
-        {/* Area ini akan "tumbuh" dan mendorong footer ke bawah */}
-        <div className="flex-grow">
-          <h3 className={`text-lg font-bold ${!isCompleted ? 'group-hover:text-primary' : 'text-gray-500'}`}>{game.title}</h3>
-          <p className="text-sm text-gray-600 mt-1 line-clamp-3">{game.description || 'Tidak ada deskripsi.'}</p>
+      <div className="p-4 flex flex-col justify-between h-32">
+        <div>
+          <h3 className={`text-lg font-bold truncate ${!isCompleted ? 'group-hover:text-violet-400' : 'text-gray-500'}`}>{game.title}</h3>
+          <p className="text-sm text-gray-400 mt-1 h-10 overflow-hidden">{game.description || 'Tidak ada deskripsi.'}</p>
         </div>
-        {/* 4. Pastikan footer tidak menyusut dan berada di bawah */}
-        <div className="flex justify-between items-center text-xs text-gray-500 mt-4 pt-4 border-t flex-shrink-0">
+        <div className="flex justify-between items-center text-xs text-gray-500 mt-2">
           <span>Oleh: {game.profiles?.username || 'Admin'}</span>
           <span className="flex items-center gap-1 font-medium">
             <Play size={12} />
@@ -74,14 +71,14 @@ function GameCard({ game, isCompleted, onReport }: { game: Game; isCompleted: bo
   );
   
   return isCompleted ? (
-    <div title="Anda sudah menyelesaikan game ini" className="h-full">{cardContent}</div>
+    <div title="Anda sudah menyelesaikan game ini">{cardContent}</div>
   ) : (
-    <Link href={`/play/${game.game_code}`} className="block h-full">{cardContent}</Link>
+    <Link href={`/play/${game.game_code}`}>{cardContent}</Link>
   );
 }
 
 
-// --- KOMPONEN UTAMA HALAMAN GAME ---
+// --- KOMPONEN UTAMA HALAMAN GAME (STYLING BARU) ---
 export default function GamesPage() {
   const [isJoinModalOpen, setJoinModalOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -159,9 +156,9 @@ export default function GamesPage() {
   
   const GameSection = ({ title, games }: { title: string; games: Game[] }) => (
     <section>
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">{title}</h2>
+      <h2 className="text-3xl font-bold text-white mb-6 font-display tracking-wider">{title}</h2>
       {games.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="flex flex-col md:flex-row gap-4">
           {games.map((game) => (
             <GameCard 
               key={game.id} 
@@ -172,7 +169,7 @@ export default function GamesPage() {
           ))}
         </div>
       ) : (
-        <div className="text-center text-gray-500 py-8 px-4 border-2 border-dashed rounded-lg">
+        <div className="text-center text-gray-500 py-8 px-4 border-2 border-dashed rounded-lg border-indigo-700">
           <p>Tidak ada game di kategori ini untuk saat ini.</p>
         </div>
       )}
@@ -181,11 +178,11 @@ export default function GamesPage() {
 
   return (
     <>
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
+      <div className="max-w-7xl mx-auto text-white min-h-screen pt-24 px-4 pb-4 sm:px-6 sm:pb-6 lg:px-8 lg:pb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10">
           <div>
-            <h1 className="text-3xl font-extrabold text-gray-900">Pilih Petualanganmu</h1>
-            <p className="text-gray-600 mt-1">Mainkan game resmi atau jelajahi karya dari komunitas.</p>
+            <h1 className="text-4xl font-extrabold text-white font-display tracking-wider">Pilih Petualanganmu</h1>
+            <p className="text-gray-400 mt-1">Mainkan game resmi atau jelajahi karya dari komunitas.</p>
           </div>
           <div className="flex gap-2 mt-4 sm:mt-0">
              {isAdmin && (
@@ -193,22 +190,22 @@ export default function GamesPage() {
                     <Shield size={18} /> Admin
                 </Link>
              )}
-            <button onClick={() => setJoinModalOpen(true)} className="bg-gray-800 text-white px-4 py-2 rounded-lg font-semibold hover:bg-black transition flex items-center gap-2">
+            <button onClick={() => setJoinModalOpen(true)} className="bg-white text-black px-4 py-2 rounded-lg font-semibold hover:bg-slate-300 transition flex items-center gap-2">
                 <Users size={18} /> Gabung Game
             </button>
-            <Link href="/create" className="bg-primary text-white px-4 py-2 rounded-lg font-semibold hover:bg-secondary transition flex items-center gap-2">
+            <Link href="/create" className="bg-violet-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-violet-700 transition flex items-center gap-2">
                 <Plus size={18} /> Buat Game
             </Link>
           </div>
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center h-64"><Loader2 className="animate-spin h-12 w-12 text-primary" /></div>
+          <div className="flex justify-center items-center h-64"><Loader2 className="animate-spin h-12 w-12 text-violet-400" /></div>
         ) : (
           <div className="space-y-12">
             <GameSection title="Game Resmi - Mode Cerita" games={officialStoryGames} />
             <GameSection title="Game Resmi - Mode Kuis" games={officialQuizGames} />
-            <hr />
+            <hr className="border-slate-700"/>
             <GameSection title="Game Komunitas - Mode Cerita" games={userStoryGames} />
             <GameSection title="Game Komunitas - Mode Kuis" games={userQuizGames} />
           </div>

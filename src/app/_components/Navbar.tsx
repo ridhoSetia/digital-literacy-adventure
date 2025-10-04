@@ -23,10 +23,15 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="absolute top-0 left-0 right-0 z-20 container mx-auto px-6 py-8 flex items-center justify-between text-sm flex-shrink-0">
+      {/* PERUBAHAN: 
+        - `container` dan `mx-auto` dihapus dari header.
+        - `right-0` ditambahkan untuk memastikan header membentang penuh.
+        - Sebuah div baru ditambahkan di dalamnya untuk menjadi container.
+      */}
+      <header className="bg-indigo-100/30 backdrop-blur-md fixed top-0 left-0 right-0 z-20">
+        <div className="container mx-auto flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3 font-bold text-lg">
               <a href="/" className="flex items-center gap-3">
-                <div className="w-4 h-4 bg-white rounded-full"></div>
                 <span>Digital Explorer</span>
               </a>
           </div>
@@ -44,6 +49,7 @@ export default function Navbar() {
                 </>
               )}
             </div>
+        </div>
       </header>
 
       <LoginModal isOpen={isLoginModalOpen} onClose={() => setLoginModalOpen(false)} onSwitchToRegister={openRegister} />

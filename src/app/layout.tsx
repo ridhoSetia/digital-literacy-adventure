@@ -3,6 +3,7 @@ import { Inter, Bebas_Neue, Press_Start_2P } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 import AuthProvider from './_contexts/AuthContext';
 import Navbar from './_components/Navbar';
+import Footer from './_components/Footer';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const bebasNeue = Bebas_Neue({ subsets: ['latin'], weight: '400', variable: '--font-bebas-neue' });
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Navbar />
           {/* Tag <main> dipindahkan ke komponen halaman masing-masing jika diperlukan */}
           {children}
+           <Footer />
           <Toaster position="top-center" reverseOrder={false} />
         </AuthProvider>
       </body>
