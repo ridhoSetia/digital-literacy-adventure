@@ -64,8 +64,9 @@ export default function JoinGameModal({ isOpen, onClose }: JoinGameModalProps) {
             <div className="p-1 bg-slate-700 rounded-lg">
                 <QrScanner 
                     onScanResult={handleScanSuccess} 
-                    onScanError={(error) => {
-                        console.error("QR Scan Error:", error);
+                    // PERUBAIKAN DI SINI
+                    onScanError={() => {
+                        console.error("QR Scan Error: Terjadi kesalahan saat memindai.");
                     }}
                 />
             </div>

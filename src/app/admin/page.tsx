@@ -45,7 +45,8 @@ export default function AdminDashboard() {
         if (error) {
             toast.error("Gagal memuat laporan.");
         } else {
-            setReports(reportData as any);
+            // PERUBAIKAN DI SINI
+            setReports(reportData as Report[]);
         }
         setLoading(false);
     }, [user, router, supabase]);

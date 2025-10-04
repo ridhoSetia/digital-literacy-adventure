@@ -120,7 +120,8 @@ export default function CreateGamePage() {
             })
         );
         
-        const { error: scenariosError } = await supabase.from('scenarios').insert(scenariosToInsert as any);
+        // PERUBAIKAN DI SINI
+        const { error: scenariosError } = await supabase.from('scenarios').insert(scenariosToInsert);
 
         toast.dismiss();
         if (scenariosError) {

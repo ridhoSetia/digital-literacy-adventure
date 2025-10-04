@@ -77,8 +77,9 @@ export default function ResultPage() {
                 <div className="bg-slate-900/70 backdrop-blur-sm border border-violet-700 rounded-2xl shadow-2xl shadow-violet-500/20 p-8 max-w-2xl w-full text-center">
                     <Award className="mx-auto h-20 w-20 text-yellow-400 mb-4" />
                     <h1 className="text-4xl font-extrabold text-white mb-2 font-display tracking-wider">Selamat!</h1>
+                    {/* PERUBAIKAN DI SINI */}
                     <p className="text-gray-400 mb-6">
-                        Anda telah menyelesaikan game "{result.games?.[0]?.title || 'ini'}" dengan gemilang.
+                        Anda telah menyelesaikan game &quot;{result.games?.[0]?.title || 'ini'}&quot; dengan gemilang.
                     </p>
 
                     <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 mb-8">
