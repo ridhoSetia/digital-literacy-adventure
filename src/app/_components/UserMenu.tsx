@@ -28,7 +28,7 @@ export default function UserMenu() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white/80 backdrop-blur-md  rounded-lg shadow-lg border-indigo-400 z-50">
+        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border-indigo-400 z-50">
           <div className="py-1">
             <div className="px-4 py-2 text-sm text-indigo-950 border-gray-400 border-b">
               <p className="font-semibold truncate">{user?.email}</p>

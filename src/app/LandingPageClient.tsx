@@ -91,13 +91,13 @@ export default function LandingPageClient({
           <div className="relative">
             <div className="bg-red-500 rounded-2xl p-3 shadow-2xl">
               <div className="bg-red-400 rounded-xl p-1.5">
-                <div className="bg-slate-200 text-indigo-950 px-6 py-8 sm:px-10 sm:py-12 rounded-lg shadow-inner">
+                <div className="bg-slate-200 text-indigo-950 px-6 py-8 sm:px-8 sm:py-8 rounded-lg shadow-inner">
                   <div className="flex flex-col items-center justify-center leading-none -mt-3">
                     <span className="font-display text-5xl sm:text-7xl tracking-widest">
-                      Digital
+                      Navigasi
                     </span>
                     <span className="font-display text-5xl sm:text-7xl tracking-widest">
-                      Explorer
+                      Literasi
                     </span>
                   </div>
                 </div>
