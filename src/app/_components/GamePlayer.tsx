@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-client';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/app/_contexts/AuthContext';
-import { ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowRight, Loader2, ShieldOff } from 'lucide-react';
 import Image from 'next/image';
+import { usePlaySound } from '../_hooks/usePlaySound'; // <-- 1. Import hook suara
 
 // --- Tipe Data (Tidak Diubah) ---
 type Scenario = {
@@ -51,6 +52,10 @@ export default function GamePlayer({ gameCode, isReviewMode = false }: { gameCod
     const supabase = createClient();
     const router = useRouter();
     const { user } = useAuth();
+    
+    // <-- 2. Inisialisasi fungsi & state untuk suara -->
+    const playSound = usePlaySound();
+    const [bgMusic, setBgMusic] = useState<HTMLAudioElement | null>(null);
 
     const [game, setGame] = useState<Game | null>(null);
     const [currentScenarioIndex, setCurrentScenarioIndex] = useState(0);
@@ -65,6 +70,22 @@ export default function GamePlayer({ gameCode, isReviewMode = false }: { gameCod
 
     const currentScenario = game?.scenarios[currentScenarioIndex];
 
+    // <-- 3. Efek untuk memutar dan menghentikan musik latar -->
+    useEffect(() => {
+        if (isReviewMode || !sessionLoaded) return;
+
+        const audio = new Audio('/sounds/background.mp3');
+        audio.loop = true;
+        audio.volume = 0.2; // Atur volume agar tidak terlalu keras
+        audio.play().catch(e => console.error("Gagal memutar musik latar:", e));
+        setBgMusic(audio);
+
+        // Fungsi cleanup saat komponen di-unmount
+        return () => {
+            audio.pause();
+        };
+    }, [isReviewMode, sessionLoaded]);
+
     const saveProgress = useCallback(async (indexToSave: number, scoreToSave: number, hpToSave: number) => {
         if (!user || !game || isReviewMode || isGameFinished) return;
 
@@ -76,6 +97,43 @@ export default function GamePlayer({ gameCode, isReviewMode = false }: { gameCod
             hp: hpToSave,
         }, { onConflict: 'user_id, game_id' });
     }, [user, game, isReviewMode, isGameFinished, supabase]);
+
+    const endGame = useCallback(async (isGameOver = false) => {
+        // <-- 4. Hentikan musik & mainkan suara game over/win -->
+        if (bgMusic) {
+            bgMusic.pause();
+        }
+        if (!isReviewMode) {
+            if (isGameOver) {
+                playSound('/sounds/gameover.mp3');
+            } else {
+                playSound('/sounds/win.mp3');
+            }
+        }
+
+        setIsGameFinished(true);
+        if (isReviewMode) {
+            toast.success("Review Selesai.");
+            return;
+        }
+
+        if (!user || !game) return;
+        toast.loading('Menyimpan hasil...');
+
+        await supabase.from('game_sessions').delete().match({ user_id: user.id, game_id: game.id });
+        
+        if (!isGameOver) {
+            const { data: scoreData, error: scoreError } = await supabase.from('scores').insert({ user_id: user.id, game_id: game.id, score_achieved: score }).select('id').single();
+            if (scoreError) { toast.dismiss(); toast.error("Gagal menyimpan sesi permainan."); return; }
+            await supabase.rpc('increment_play_count', { game_id_input: game.id });
+            const { error: rpcError } = await supabase.rpc('increment_xp', { user_id_input: user.id, xp_to_add: score });
+            toast.dismiss();
+            if (rpcError) { toast.error("Gagal memperbarui total XP Anda."); }
+            else { toast.success("Game Selesai!"); router.push(`/result/${scoreData.id}`); }
+        } else {
+            toast.dismiss();
+        }
+    }, [isReviewMode, user, game, score, supabase, router, bgMusic, playSound]);
 
     useEffect(() => {
         const fetchGameAndSession = async () => {
@@ -113,6 +171,13 @@ export default function GamePlayer({ gameCode, isReviewMode = false }: { gameCod
             router.push('/');
         }
     }, [gameCode, user, router, supabase, isReviewMode]);
+    
+    useEffect(() => {
+        if (hp <= 0 && !isGameFinished && !isReviewMode) {
+            endGame(true);
+        }
+    }, [hp, isGameFinished, isReviewMode, endGame]);
+
 
     useEffect(() => {
         if (!sessionLoaded || isLoading || !game) return;
@@ -157,9 +222,11 @@ export default function GamePlayer({ gameCode, isReviewMode = false }: { gameCod
 
         const points = currentScenario.points || 0;
         if (optionKey === currentScenario.correct_answer) {
+            playSound('/sounds/correct.wav'); // <-- 5. Suara jawaban benar
             setScore(prev => prev + points);
             toast.success(`Benar! +${points} XP`, { icon: '🎉' });
         } else {
+            playSound('/sounds/incorrect.wav'); // <-- 6. Suara jawaban salah
             setHp(prev => Math.max(0, prev - 20));
             toast.error(optionKey ? 'Kurang Tepat! -20 HP' : 'Waktu Habis! -20 HP', { icon: '💔' });
         }
@@ -167,7 +234,7 @@ export default function GamePlayer({ gameCode, isReviewMode = false }: { gameCod
         setSelectedOption(optionKey);
         setIsAnswered(true);
 
-    }, [isAnswered, currentScenario, game?.game_type, isReviewMode]);
+    }, [isAnswered, currentScenario, game?.game_type, isReviewMode, playSound]);
 
     const nextStep = () => {
         if (currentScenarioIndex < game!.scenarios.length - 1) {
@@ -176,30 +243,29 @@ export default function GamePlayer({ gameCode, isReviewMode = false }: { gameCod
             setSelectedOption(null);
             if (game?.game_type === 'story') setViewState('reading');
         } else {
-            endGame();
+            endGame(false); // Panggil endGame tanpa parameter (bukan game over)
         }
     };
+    
+    if (hp <= 0 && !isReviewMode) {
+        return (
+            <div className="flex min-h-screen items-center justify-center text-white flex-col p-4">
+                <ShieldOff className="w-24 h-24 text-red-500 mb-4" />
+                <h1 className="text-5xl font-bold font-pixel text-red-500 text-center">GAME OVER</h1>
+                <p className="text-gray-400 mt-4 text-center">Anda kehabisan HP.</p>
+                <button
+                    onClick={() => {
+                        playSound('/sounds/click.mp3', 0.5);
+                        router.push('/game');
+                    }}
+                    className="mt-8 bg-violet-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-violet-700 transition"
+                >
+                    Kembali ke Daftar Game
+                </button>
+            </div>
+        );
+    }
 
-    const endGame = async () => {
-        setIsGameFinished(true);
-        if (isReviewMode) {
-            toast.success("Review Selesai.");
-            return;
-        }
-
-        if (!user || !game) return;
-        toast.loading('Menyimpan hasil...');
-
-        await supabase.from('game_sessions').delete().match({ user_id: user.id, game_id: game.id });
-
-        const { data: scoreData, error: scoreError } = await supabase.from('scores').insert({ user_id: user.id, game_id: game.id, score_achieved: score }).select('id').single();
-        if (scoreError) { toast.dismiss(); toast.error("Gagal menyimpan sesi permainan."); return; }
-        await supabase.rpc('increment_play_count', { game_id_input: game.id });
-        const { error: rpcError } = await supabase.rpc('increment_xp', { user_id_input: user.id, xp_to_add: score });
-        toast.dismiss();
-        if (rpcError) { toast.error("Gagal memperbarui total XP Anda."); }
-        else { toast.success("Game Selesai!"); router.push(`/result/${scoreData.id}`); }
-    };
 
     if (isLoading || !currentScenario) return <div className="flex min-h-screen items-center justify-center"><Loader2 className="animate-spin h-10 w-10 text-violet-400" /></div>;
     const progress = ((currentScenarioIndex + 1) / game!.scenarios.length) * 100;
@@ -212,7 +278,8 @@ export default function GamePlayer({ gameCode, isReviewMode = false }: { gameCod
                 </div>
             )}
             <h2 className="text-2xl font-bold mb-4 font-display tracking-wider">{currentScenario.situation}</h2>
-            <div className="space-y-3">{Object.entries(currentScenario.options).map(([key, value]) => (<button key={key} onClick={() => handleAnswer(key)} disabled={isAnswered || isGameFinished} className={`w-full text-left p-4 rounded-lg border-2 transition-all duration-200 
+            {/* <-- 7. Tambahkan suara klik pada tombol pilihan --> */}
+            <div className="space-y-3">{Object.entries(currentScenario.options).map(([key, value]) => (<button key={key} onClick={() => { playSound('/sounds/click.mp3', 0.5); handleAnswer(key); }} disabled={isAnswered || isGameFinished} className={`w-full text-left p-4 rounded-lg border-2 transition-all duration-200 
                 ${isAnswered && key === currentScenario.correct_answer ? 'bg-green-900/50 border-green-500' : ''} 
                 ${isAnswered && key === selectedOption && key !== currentScenario.correct_answer ? 'bg-red-900/50 border-red-500' : ''} 
                 ${!isAnswered ? 'bg-slate-800/50 border-slate-700 hover:bg-violet-900/50 hover:border-violet-600' : 'border-slate-700'}`}>{value}</button>))}
@@ -223,7 +290,7 @@ export default function GamePlayer({ gameCode, isReviewMode = false }: { gameCod
                         <h3 className="font-bold font-display tracking-wide text-yellow-400">Penjelasan:</h3>
                         <p className="text-gray-300">{currentScenario.explanation}</p>
                     </div>
-                    <button onClick={nextStep} disabled={isGameFinished} className="w-full mt-4 bg-violet-600 text-white py-3 rounded-lg font-semibold hover:bg-violet-700 transition flex items-center justify-center gap-2 disabled:bg-slate-600">
+                    <button onClick={() => { playSound('/sounds/click.mp3', 0.5); nextStep(); }} disabled={isGameFinished} className="w-full mt-4 bg-violet-600 text-white py-3 rounded-lg font-semibold hover:bg-violet-700 transition flex items-center justify-center gap-2 disabled:bg-slate-600">
                         {currentScenarioIndex < game!.scenarios.length - 1 ? 'Lanjut ke Pertanyaan Berikutnya' : 'Lihat Hasil Akhir'}
                         <ArrowRight size={18} />
                     </button>
@@ -240,11 +307,11 @@ export default function GamePlayer({ gameCode, isReviewMode = false }: { gameCod
                     <p className="text-lg leading-relaxed text-gray-300"><HighlightedText text={currentScenario.situation} highlight={viewState === 'feedback' ? currentScenario.highlight_phrase : null} /></p>
                 </div>
             )}
-            {viewState === 'reading' && (<button onClick={() => setViewState('answering')} disabled={isGameFinished} className="w-full bg-violet-600 text-white py-3 rounded-lg font-semibold hover:bg-violet-700 transition disabled:bg-slate-600">Lanjut untuk Menjawab</button>)}
+            {viewState === 'reading' && (<button onClick={() => { playSound('/sounds/click.mp3', 0.5); setViewState('answering'); }} disabled={isGameFinished} className="w-full bg-violet-600 text-white py-3 rounded-lg font-semibold hover:bg-violet-700 transition disabled:bg-slate-600">Lanjut untuk Menjawab</button>)}
             {viewState === 'answering' && (
                 <div className="bg-slate-900/50 backdrop-blur-sm border border-violet-700 p-8 rounded-lg shadow-lg">
                     <h2 className="text-2xl font-bold mb-4 font-display tracking-wider">{currentScenario.question}</h2>
-                    <div className="space-y-3">{Object.entries(currentScenario.options).map(([key, value]) => (<button key={key} onClick={() => handleAnswer(key)} disabled={isGameFinished} className="w-full text-left p-4 rounded-lg border-2 bg-slate-800/50 border-slate-700 hover:bg-violet-900/50 hover:border-violet-600 transition-colors disabled:bg-slate-800 disabled:cursor-not-allowed">{value}</button>))}</div>
+                    <div className="space-y-3">{Object.entries(currentScenario.options).map(([key, value]) => (<button key={key} onClick={() => { playSound('/sounds/click.mp3', 0.5); handleAnswer(key); }} disabled={isGameFinished} className="w-full text-left p-4 rounded-lg border-2 bg-slate-800/50 border-slate-700 hover:bg-violet-900/50 hover:border-violet-600 transition-colors disabled:bg-slate-800 disabled:cursor-not-allowed">{value}</button>))}</div>
                 </div>
             )}
             {viewState === 'feedback' && (
@@ -253,7 +320,7 @@ export default function GamePlayer({ gameCode, isReviewMode = false }: { gameCod
                         {selectedOption === currentScenario.correct_answer ? 'Jawaban Benar!' : (selectedOption === null ? 'Waktu Habis!' : 'Jawaban Kurang Tepat!')}
                     </div>
                     <p className="p-4 bg-slate-800/50 border border-slate-700 rounded-lg mb-4 text-gray-300"><b>Penjelasan:</b> {currentScenario.explanation}</p>
-                    <button onClick={nextStep} disabled={isGameFinished} className="w-full bg-violet-600 text-white py-3 rounded-lg font-semibold hover:bg-violet-700 transition disabled:bg-slate-600">{currentScenarioIndex < game!.scenarios.length - 1 ? 'Lanjut ke Skenario Berikutnya' : 'Lihat Hasil Akhir'}</button>
+                    <button onClick={() => { playSound('/sounds/click.mp3', 0.5); nextStep(); }} disabled={isGameFinished} className="w-full bg-violet-600 text-white py-3 rounded-lg font-semibold hover:bg-violet-700 transition disabled:bg-slate-600">{currentScenarioIndex < game!.scenarios.length - 1 ? 'Lanjut ke Skenario Berikutnya' : 'Lihat Hasil Akhir'}</button>
                 </div>
             )}
         </>
