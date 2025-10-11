@@ -4,8 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase-client';
 import { useAuth } from '@/app/_contexts/AuthContext';
 import toast from 'react-hot-toast';
-import { User, Edit3, Save, Gamepad, Trash2, Share2, Loader2 } from 'lucide-react';
-import Image from 'next/image';
+import { User, Edit3, Save, Gamepad, Trash2, Share2, Loader2, Edit } from 'lucide-react';import Image from 'next/image';
 import Link from 'next/link';
 import GameShareModal from '../_components/GameShareModal';
 
@@ -196,6 +195,9 @@ export default function ProfilePage() {
                                         <button onClick={() => setSelectedGame(game)} className="p-2 text-gray-400 hover:text-cyan-400 transition-colors" title="Kelola & Bagikan">
                                             <Share2 size={20} />
                                         </button>
+                                        <Link href={`/edit/${game.id}`} className="p-2 text-gray-400 hover:text-green-400 transition-colors" title="Edit Game">
+                                            <Edit size={20} />
+                                        </Link>
                                         <button onClick={() => handleDeleteGame(game.id, game.title)} className="p-2 text-gray-400 hover:text-red-500 transition-colors" title="Hapus Game">
                                             <Trash2 size={20} />
                                         </button>
