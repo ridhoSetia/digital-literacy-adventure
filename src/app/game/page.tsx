@@ -3,10 +3,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { CheckCircle, Plus, Users, Loader2, Play, Flag, Shield, History, RefreshCw } from 'lucide-react';
+import { Plus, Users, Loader2, Play, Flag, Shield, History, RefreshCw } from 'lucide-react';
 import JoinGameModal from '../_components/JoinGameModal';
 import ReportGameModal from '../_components/ReportGameModal';
-import GameConfirmationModal from '../_components/GameConfirmationModal'; // Impor modal baru
+import GameConfirmationModal from '../_components/GameConfirmationModal';
 import { createClient } from '@/lib/supabase-client';
 import { useAuth } from '../_contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -36,35 +36,30 @@ function GameCard({
   game, 
   status, 
   onReport,
-  onCardClick // Tambahkan prop baru
+  onCardClick
 }: { 
   game: Game; 
   status: GameStatus;
   onReport: (gameId: string, gameTitle: string) => void; 
-  onCardClick: (game: Game) => void; // Definisikan tipe prop
+  onCardClick: (game: Game) => void;
 }) {
   const { isCompleted, isInProgress, hasNewContent } = status;
-  const isPlayable = !isCompleted || hasNewContent;
   
   const handleCardClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (!isPlayable) {
-      toast.error('Game sudah diselesaikan. Tunggu update dari pembuat game!');
-    } else {
-      onCardClick(game); // Panggil fungsi onCardClick dengan data game
-    }
+    onCardClick(game);
   };
   
   return (
     <div 
       onClick={handleCardClick}
-      className={`w-full sm:w-72 flex-shrink-0 relative group border rounded-lg overflow-hidden shadow-sm transition-shadow duration-300 bg-slate-900/70 backdrop-blur-sm border-violet-700 text-white cursor-pointer ${!isPlayable ? '!cursor-not-allowed' : 'hover:shadow-violet-500/50'}`}
+      className="w-full sm:w-72 flex-shrink-0 relative group border rounded-lg overflow-hidden shadow-sm transition-shadow duration-300 bg-slate-900/70 backdrop-blur-sm border-violet-700 text-white cursor-pointer hover:shadow-violet-500/50"
     >
       
-      {!game.is_official && isPlayable && (
+      {!game.is_official && (
         <button 
           onClick={(e) => { 
-            e.stopPropagation(); // Hentikan event bubbling agar modal tidak terbuka
+            e.stopPropagation();
             onReport(game.id, game.title); 
           }} 
           className="absolute top-2 right-2 z-10 p-1.5 bg-slate-800 bg-opacity-70 rounded-full text-gray-400 hover:bg-red-900/50 hover:text-white transition" 
@@ -94,20 +89,21 @@ function GameCard({
           fill 
           style={{ objectFit: 'cover' }}
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          className={`transition-transform duration-300 ${isPlayable ? 'group-hover:scale-105' : ''} ${!isPlayable ? 'filter grayscale' : ''}`} 
+          className="transition-transform duration-300 group-hover:scale-105" 
         />
         
         {isCompleted && !hasNewContent && (
-          <div className="absolute inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center text-white p-4">
-            <CheckCircle size={48} className="mb-2 text-green-400" />
-            <span className="font-bold text-lg">Selesai</span>
+          <div className="absolute top-2 left-2 z-10">
+            <span className="px-3 py-1 bg-green-600/90 text-white text-xs font-bold rounded-full">
+              SELESAI
+            </span>
           </div>
         )}
       </div>
       
       <div className="p-4 flex flex-col justify-between h-32">
         <div>
-          <h3 className={`text-lg font-bold truncate ${isPlayable ? 'group-hover:text-violet-400' : 'text-gray-500'}`}>
+          <h3 className="text-lg font-bold truncate group-hover:text-violet-400">
             {game.title}
           </h3>
           <p className="text-sm text-gray-400 mt-1 h-10 overflow-hidden">
@@ -128,8 +124,8 @@ function GameCard({
 
 export default function GamesPage() {
   const [isJoinModalOpen, setJoinModalOpen] = useState(false);
-  const [isConfirmationModalOpen, setConfirmationModalOpen] = useState(false); // State untuk modal konfirmasi
-  const [selectedGame, setSelectedGame] = useState<Game | null>(null); // State untuk game yang dipilih
+  const [isConfirmationModalOpen, setConfirmationModalOpen] = useState(false);
+  const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [allGames, setAllGames] = useState<Game[]>([]);
   const [gameStatuses, setGameStatuses] = useState<Map<string, GameStatus>>(new Map());
@@ -242,7 +238,6 @@ export default function GamesPage() {
     setReportModalState({ isOpen: false, gameId: '', gameTitle: '' });
   };
 
-  // Fungsi untuk membuka modal konfirmasi
   const handleGameCardClick = (game: Game) => {
     setSelectedGame(game);
     setConfirmationModalOpen(true);
@@ -270,7 +265,7 @@ export default function GamesPage() {
                 totalScenarioCount: game.scenarios?.length || 0
               }}
               onReport={handleReportClick} 
-              onCardClick={handleGameCardClick} // Kirim fungsi ke GameCard
+              onCardClick={handleGameCardClick}
             />
           ))}
         </div>

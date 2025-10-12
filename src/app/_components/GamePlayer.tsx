@@ -29,7 +29,7 @@ type Game = {
   scenarios: Scenario[];
 };
 
-// --- Komponen Tambahan (Tidak Berubah) ---
+// --- Komponen Tambahan ---
 const Timer = ({
   duration,
   onTimeUp,
@@ -89,7 +89,6 @@ export default function GamePlayer({
   const router = useRouter();
   const { user } = useAuth();
 
-  // 1. Definisikan semua file audio yang akan digunakan.
   const soundFiles = [
     "/sounds/click.wav",
     "/sounds/correct.wav",
@@ -97,9 +96,7 @@ export default function GamePlayer({
     "/sounds/gameover.wav",
     "/sounds/win.wav",
   ];
-  // 2. Gunakan hook baru untuk mendapatkan fungsi playSound yang sudah dioptimalkan.
   const playSound = usePreloadedSounds(soundFiles);
-  // ▲▲▲ AKHIR PERUBAHAN UTAMA ▲▲▲
 
   const [bgMusic, setBgMusic] = useState<HTMLAudioElement | null>(null);
 
@@ -138,7 +135,7 @@ export default function GamePlayer({
   const saveProgress = useCallback(
     async (indexToSave: number, scoreToSave: number, hpToSave: number) => {
       if (!user || !game || isReviewMode || isGameFinished || isRetryMode)
-        return; // Jangan simpan progres jika mode coba lagi
+        return;
 
       try {
         await supabase.from("game_sessions").upsert(
@@ -171,7 +168,6 @@ export default function GamePlayer({
 
       setIsGameFinished(true);
       if (isReviewMode || isRetryMode) {
-        // Jangan simpan skor jika mode coba lagi
         if (!isGameOver) toast.success("Game Selesai!");
         return;
       }
@@ -311,7 +307,16 @@ export default function GamePlayer({
           if (scoreData && scoreData.scenario_count > 0) {
             const completedCount = scoreData.scenario_count;
             const totalCount = gameData.scenarios.length;
-            if (totalCount > completedCount) {
+            
+            // Jika game sudah selesai penuh, aktifkan mode main ulang
+            if (completedCount >= totalCount) {
+              setIsRetryMode(true);
+              toast("Mode Main Ulang: Kamu akan mendapat 2.5% XP", { 
+                duration: 5000,
+                icon: "🔁" 
+              });
+            } else if (totalCount > completedCount) {
+              // Jika ada konten baru
               setCurrentScenarioIndex(completedCount);
               setScore(scoreData.score_achieved);
               setNotification(
@@ -393,7 +398,6 @@ export default function GamePlayer({
     game,
   ]);
 
-  // ▼▼▼ FUNGSI `handleAnswer` DIPERBARUI ▼▼▼
   const handleAnswer = useCallback(
     (optionKey: string | null) => {
       if (isAnswered || !currentScenario) return;
@@ -408,11 +412,11 @@ export default function GamePlayer({
       if (optionKey === currentScenario.correct_answer) {
         playSound("/sounds/correct.wav");
 
-        // Cek apakah mode coba lagi aktif, jika iya, berikan 10% poin
-        const pointsToAdd = isRetryMode ? Math.floor(points * 0.1) : points;
+        // Berikan 2.5% poin jika mode main ulang aktif (tanpa pembulatan)
+        const pointsToAdd = isRetryMode ? points * 0.025 : points;
 
         setScore((prev) => prev + pointsToAdd);
-        toast.success(`Benar! +${pointsToAdd} XP`, { icon: "✅" });
+        toast.success(`Benar! +${pointsToAdd.toFixed(2)} XP`, { icon: "✅" });
       } else {
         playSound("/sounds/incorrect.wav");
         setHp((prev) => Math.max(0, prev - 20));
@@ -431,7 +435,7 @@ export default function GamePlayer({
       isReviewMode,
       playSound,
       isRetryMode,
-    ] // <-- Tambahkan isRetryMode
+    ]
   );
 
   const nextStep = () => {
@@ -445,7 +449,6 @@ export default function GamePlayer({
     }
   };
 
-  // ▼▼▼ FUNGSI BARU UNTUK MERESTART GAME ▼▼▼
   const restartGame = () => {
     setHp(100);
     setScore(0);
@@ -454,8 +457,8 @@ export default function GamePlayer({
     setSelectedOption(null);
     setIsAnswered(false);
     setViewState(game?.game_type === "quiz" ? "answering" : "reading");
-    setIsRetryMode(true); // Aktifkan mode coba lagi
-    toast.success("Coba lagi! Kamu akan mendapat 10% XP.", { icon: "💪" });
+    setIsRetryMode(true);
+    toast.success("Main ulang! Kamu akan mendapat 2.5% XP.", { icon: "💪" });
 
     if (bgMusic) {
       bgMusic.currentTime = 0;
@@ -465,7 +468,6 @@ export default function GamePlayer({
     }
   };
 
-  // ▼▼▼ TAMPILAN GAME OVER DIPERBARUI ▼▼▼
   if (hp <= 0 && !isReviewMode) {
     return (
       <div className="flex min-h-screen items-center justify-center text-white flex-col p-4">
@@ -492,7 +494,7 @@ export default function GamePlayer({
             className="bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition flex items-center justify-center gap-2"
           >
             <RotateCcw size={18} />
-            Coba Lagi (10% XP)
+            Main Ulang (2.5% XP)
           </button>
         </div>
       </div>

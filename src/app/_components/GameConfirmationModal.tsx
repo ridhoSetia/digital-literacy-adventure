@@ -1,15 +1,19 @@
 "use client";
 
 import Image from 'next/image';
-import { X, Play } from 'lucide-react';
+import { X, Play, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/app/_contexts/AuthContext';
+import { createClient } from '@/lib/supabase-client';
+import { useEffect, useState } from 'react';
 
-// Definisikan tipe untuk properti game yang dibutuhkan
 type Game = {
+  id: string;
   title: string;
   description: string | null;
   cover_image_url: string | null;
   game_code: string;
+  scenarios: { id: string }[];
 };
 
 interface GameConfirmationModalProps {
@@ -20,6 +24,33 @@ interface GameConfirmationModalProps {
 
 export default function GameConfirmationModal({ isOpen, onClose, game }: GameConfirmationModalProps) {
   const router = useRouter();
+  const { user } = useAuth();
+  const supabase = createClient();
+  const [isCompleted, setIsCompleted] = useState(false);
+
+  useEffect(() => {
+    const checkGameStatus = async () => {
+      if (!user || !game) return;
+
+      const { data: scoreData } = await supabase
+        .from('scores')
+        .select('scenario_count')
+        .eq('user_id', user.id)
+        .eq('game_id', game.id)
+        .single();
+
+      if (scoreData && scoreData.scenario_count > 0) {
+        const totalScenarios = game.scenarios?.length || 0;
+        if (scoreData.scenario_count >= totalScenarios) {
+          setIsCompleted(true);
+        }
+      }
+    };
+
+    if (isOpen) {
+      checkGameStatus();
+    }
+  }, [isOpen, user, game, supabase]);
 
   if (!isOpen || !game) return null;
 
@@ -52,12 +83,22 @@ export default function GameConfirmationModal({ isOpen, onClose, game }: GameCon
             {game.description || 'Tidak ada deskripsi.'}
           </p>
           
+          {isCompleted && (
+            <div className="mb-4 p-3 bg-amber-900/30 border border-amber-600/50 rounded-lg flex items-start gap-2">
+              <AlertCircle size={20} className="text-amber-400 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-amber-200">
+                <p className="font-semibold">Peringatan Main Ulang</p>
+                <p className="text-xs mt-1">Game ini sudah diselesaikan. Bermain ulang hanya akan memberikan <span className="font-bold">2.5% XP</span> dari nilai asli untuk setiap jawaban benar.</p>
+              </div>
+            </div>
+          )}
+          
           <div className="flex flex-col sm:flex-row gap-4">
             <button 
               onClick={handleStartGame} 
               className="w-full bg-violet-600 text-white py-3 rounded-lg font-semibold hover:bg-violet-700 transition flex items-center justify-center gap-2"
             >
-              <Play size={18} /> Mulai
+              <Play size={18} /> {isCompleted ? 'Main Ulang' : 'Mulai'}
             </button>
             <button 
               onClick={onClose} 
