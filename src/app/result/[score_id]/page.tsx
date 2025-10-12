@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase-client';
 import Link from 'next/link';
 import { Award, Trophy, ArrowLeft } from 'lucide-react';
 import Confetti from 'react-confetti';
+import { usePreloadedSounds } from '@/app/_hooks/usePreloadedSounds';
 
 // Tipe untuk data hasil skor
 type ResultData = {
@@ -15,7 +16,6 @@ type ResultData = {
   }[] | null;
 };
 
-// Fungsi untuk menentukan kategori berdasarkan skor
 const getScoreCategory = (score: number) => {
   if (score < 50) return { name: 'Pemula Digital', color: 'text-gray-400' };
   if (score < 100) return { name: 'Penjelajah Cerdas', color: 'text-cyan-400' };
@@ -26,12 +26,20 @@ export default function ResultPage() {
     const router = useRouter();
     const { score_id } = useParams();
     const supabase = createClient();
+    
+    // ▼▼▼ TAMBAHKAN HOOK BARU ▼▼▼
+    const searchParams = useSearchParams(); 
+    const playSound = usePreloadedSounds(['/sounds/win.wav']);
 
     const [result, setResult] = useState<ResultData | null>(null);
     const [loading, setLoading] = useState(true);
     const [showConfetti, setShowConfetti] = useState(false);
 
     useEffect(() => {
+        // Cek query param dan putar suara jika menang
+        if (searchParams.get('status') === 'win') {
+            playSound('/sounds/win.wav', 1);
+        }
         setShowConfetti(true);
 
         const fetchResult = async () => {
@@ -39,10 +47,7 @@ export default function ResultPage() {
 
             const { data, error } = await supabase
                 .from('scores')
-                .select(`
-                    score_achieved,
-                    games ( title )
-                `)
+                .select(`score_achieved, games(title)`)
                 .eq('id', score_id)
                 .single();
 
@@ -56,8 +61,10 @@ export default function ResultPage() {
         };
 
         fetchResult();
-    }, [score_id, router, supabase]);
+    // Tambahkan playSound dan searchParams ke dependency array
+    }, [score_id, router, supabase, playSound, searchParams]);
     
+    // ... (sisa kode JSX tidak berubah)
     if (loading) {
         return <div className="flex justify-center items-center h-screen text-white">Memuat hasil...</div>;
     }
@@ -71,13 +78,10 @@ export default function ResultPage() {
     return (
         <>
             {showConfetti && <Confetti recycle={false} onConfettiComplete={() => setShowConfetti(false)} />}
-            {/* Latar belakang diubah agar sesuai tema */}
             <div className="min-h-screen flex items-center justify-center p-4 pt-20">
-                {/* Kartu utama diubah ke style gelap */}
                 <div className="bg-slate-900/70 backdrop-blur-sm border border-violet-700 rounded-2xl shadow-2xl shadow-violet-500/20 p-8 max-w-2xl w-full text-center">
                     <Award className="mx-auto h-20 w-20 text-yellow-400 mb-4" />
                     <h1 className="text-4xl font-extrabold text-white mb-2 font-display tracking-wider">Selamat!</h1>
-                    {/* PERUBAIKAN DI SINI */}
                     <p className="text-gray-400 mb-6">
                         Anda telah menyelesaikan game &quot;{result.games?.[0]?.title || 'ini'}&quot; dengan gemilang.
                     </p>

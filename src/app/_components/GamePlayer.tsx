@@ -164,9 +164,9 @@ export default function GamePlayer({
         bgMusic.pause();
       }
       if (!isReviewMode) {
-        isGameOver
-          ? playSound("/sounds/gameover.wav")
-          : playSound("/sounds/win.wav");
+        if (isGameOver) {
+          playSound("/sounds/gameover.wav");
+        }
       }
 
       setIsGameFinished(true);
@@ -217,7 +217,7 @@ export default function GamePlayer({
             toast.error("Gagal memperbarui XP.");
           } else {
             toast.success("Konten baru selesai!");
-            router.push(`/result/${existingScore.id}`);
+            router.push(`/result/${existingScore.id}?status=win`);
           }
         } else {
           const { data: scoreData, error: scoreError } = await supabase
@@ -250,7 +250,7 @@ export default function GamePlayer({
             toast.error("Gagal memperbarui total XP Anda.");
           } else {
             toast.success("Game Selesai!");
-            router.push(`/result/${scoreData.id}`);
+            router.push(`/result/${scoreData.id}?status=win`);
           }
         }
       } else {
