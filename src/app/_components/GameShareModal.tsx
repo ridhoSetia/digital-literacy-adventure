@@ -37,7 +37,7 @@ export default function GameShareModal({ isOpen, onClose, gameCode, shareLink }:
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">Kode Game</label>
             <div className="flex">
-              <input type="text" value={gameCode} className="flex-1 px-4 py-2 border border-slate-700 rounded-l-lg bg-slate-800 font-pixel tracking-widest" readOnly />
+              <input type="text" value={gameCode} className="flex-1 px-4 py-2 border border-slate-700 rounded-l-lg bg-slate-800 font-pixel text-sm" readOnly />
               <button onClick={() => copyToClipboard(gameCode, 'Kode Game')} className="px-4 py-2 bg-violet-600 text-white rounded-r-lg hover:bg-violet-700 transition flex items-center">
                 <Copy size={18} />
               </button>

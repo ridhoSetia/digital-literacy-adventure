@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { CheckCircle, Plus, Users, Loader2, Play, Flag, Shield, History, RefreshCw } from 'lucide-react';
 import JoinGameModal from '../_components/JoinGameModal';
 import ReportGameModal from '../_components/ReportGameModal';
+import GameConfirmationModal from '../_components/GameConfirmationModal'; // Impor modal baru
 import { createClient } from '@/lib/supabase-client';
 import { useAuth } from '../_contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -26,7 +27,7 @@ type Game = {
 type GameStatus = {
   isCompleted: boolean;
   isInProgress: boolean;
-  hasNewContent: boolean; // Ada penambahan scenarios sejak terakhir diselesaikan
+  hasNewContent: boolean;
   completedScenarioCount: number;
   totalScenarioCount: number;
 };
@@ -34,38 +35,36 @@ type GameStatus = {
 function GameCard({ 
   game, 
   status, 
-  onReport 
+  onReport,
+  onCardClick // Tambahkan prop baru
 }: { 
   game: Game; 
   status: GameStatus;
   onReport: (gameId: string, gameTitle: string) => void; 
+  onCardClick: (game: Game) => void; // Definisikan tipe prop
 }) {
   const { isCompleted, isInProgress, hasNewContent } = status;
-  
-  // Game bisa dimainkan jika:
-  // 1. Belum diselesaikan ATAU
-  // 2. Sudah diselesaikan tapi ada konten baru (hasNewContent === true)
   const isPlayable = !isCompleted || hasNewContent;
   
-  // Handler untuk klik card
   const handleCardClick = (e: React.MouseEvent) => {
+    e.preventDefault();
     if (!isPlayable) {
-      e.preventDefault();
       toast.error('Game sudah diselesaikan. Tunggu update dari pembuat game!');
+    } else {
+      onCardClick(game); // Panggil fungsi onCardClick dengan data game
     }
   };
   
-  const cardContent = (
+  return (
     <div 
       onClick={handleCardClick}
-      className={`w-full sm:w-72 flex-shrink-0 relative group border rounded-lg overflow-hidden shadow-sm transition-shadow duration-300 bg-slate-900/70 backdrop-blur-sm border-violet-700 text-white ${!isPlayable ? 'cursor-not-allowed' : 'hover:shadow-violet-500/50'}`}
+      className={`w-full sm:w-72 flex-shrink-0 relative group border rounded-lg overflow-hidden shadow-sm transition-shadow duration-300 bg-slate-900/70 backdrop-blur-sm border-violet-700 text-white cursor-pointer ${!isPlayable ? '!cursor-not-allowed' : 'hover:shadow-violet-500/50'}`}
     >
       
-      {/* Tombol Report (hanya untuk game yang bisa dimainkan & bukan official) */}
       {!game.is_official && isPlayable && (
         <button 
           onClick={(e) => { 
-            e.preventDefault();
+            e.stopPropagation(); // Hentikan event bubbling agar modal tidak terbuka
             onReport(game.id, game.title); 
           }} 
           className="absolute top-2 right-2 z-10 p-1.5 bg-slate-800 bg-opacity-70 rounded-full text-gray-400 hover:bg-red-900/50 hover:text-white transition" 
@@ -75,7 +74,6 @@ function GameCard({
         </button>
       )}
       
-      {/* Label Status - Prioritas: UPDATED > In Progress > None */}
       {hasNewContent && isCompleted && (
         <div className="absolute top-2 left-2 z-10 px-2 py-1 bg-gradient-to-r from-green-600 to-emerald-600 rounded-md text-xs font-bold flex items-center gap-1 shadow-lg animate-pulse">
           <RefreshCw size={12} />
@@ -89,7 +87,6 @@ function GameCard({
         </div>
       )}
       
-      {/* Cover Image */}
       <div className="relative w-full h-48">
         <Image 
           src={game.cover_image_url || '/placeholder.png'} 
@@ -100,7 +97,6 @@ function GameCard({
           className={`transition-transform duration-300 ${isPlayable ? 'group-hover:scale-105' : ''} ${!isPlayable ? 'filter grayscale' : ''}`} 
         />
         
-        {/* Overlay "Selesai" hanya jika complete DAN tidak ada konten baru */}
         {isCompleted && !hasNewContent && (
           <div className="absolute inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center text-white p-4">
             <CheckCircle size={48} className="mb-2 text-green-400" />
@@ -109,7 +105,6 @@ function GameCard({
         )}
       </div>
       
-      {/* Card Content */}
       <div className="p-4 flex flex-col justify-between h-32">
         <div>
           <h3 className={`text-lg font-bold truncate ${isPlayable ? 'group-hover:text-violet-400' : 'text-gray-500'}`}>
@@ -129,18 +124,12 @@ function GameCard({
       </div>
     </div>
   );
-  
-  // Jika tidak bisa dimainkan, return div biasa tanpa Link
-  if (!isPlayable) {
-    return <div title="Anda sudah menyelesaikan game ini">{cardContent}</div>;
-  }
-  
-  // Jika bisa dimainkan, wrap dengan Link
-  return <Link href={`/play/${game.game_code}`}>{cardContent}</Link>;
 }
 
 export default function GamesPage() {
   const [isJoinModalOpen, setJoinModalOpen] = useState(false);
+  const [isConfirmationModalOpen, setConfirmationModalOpen] = useState(false); // State untuk modal konfirmasi
+  const [selectedGame, setSelectedGame] = useState<Game | null>(null); // State untuk game yang dipilih
   const [isAdmin, setIsAdmin] = useState(false);
   const [allGames, setAllGames] = useState<Game[]>([]);
   const [gameStatuses, setGameStatuses] = useState<Map<string, GameStatus>>(new Map());
@@ -157,7 +146,6 @@ export default function GamesPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     
-    // Fetch games dengan scenarios
     const gamesPromise = supabase
       .from('games')
       .select('*, profiles(username), scenarios(id)')
@@ -169,13 +157,11 @@ export default function GamesPage() {
     let profilePromise;
 
     if (user) {
-      // Fetch scores dengan scenario_count (untuk cek apakah ada konten baru)
       scoresPromise = supabase
         .from('scores')
         .select('game_id, scenario_count')
         .eq('user_id', user.id);
       
-      // Fetch game yang sedang in progress
       inProgressGamesPromise = supabase
         .from('game_sessions')
         .select('game_id')
@@ -199,7 +185,6 @@ export default function GamesPage() {
       const games = gamesResult.data as Game[];
       setAllGames(games);
       
-      // Build game statuses
       const statuses = new Map<string, GameStatus>();
       const inProgressSet = new Set(inProgressResult?.data?.map(s => s.game_id) || []);
       
@@ -208,8 +193,8 @@ export default function GamesPage() {
         const scoreRecord = scoresResult?.data?.find(s => s.game_id === game.id);
         const completedScenarioCount = scoreRecord?.scenario_count || 0;
         
-        const isCompleted = completedScenarioCount > 0; // Pernah menyelesaikan game
-        const hasNewContent = isCompleted && totalScenarioCount > completedScenarioCount; // Ada penambahan scenarios
+        const isCompleted = completedScenarioCount > 0;
+        const hasNewContent = isCompleted && totalScenarioCount > completedScenarioCount;
         const isInProgress = inProgressSet.has(game.id);
         
         statuses.set(game.id, {
@@ -257,6 +242,12 @@ export default function GamesPage() {
     setReportModalState({ isOpen: false, gameId: '', gameTitle: '' });
   };
 
+  // Fungsi untuk membuka modal konfirmasi
+  const handleGameCardClick = (game: Game) => {
+    setSelectedGame(game);
+    setConfirmationModalOpen(true);
+  };
+
   const officialStoryGames = allGames.filter(g => g.is_official && g.game_type === 'story');
   const officialQuizGames = allGames.filter(g => g.is_official && g.game_type === 'quiz');
   const userStoryGames = allGames.filter(g => !g.is_official && g.game_type === 'story');
@@ -279,6 +270,7 @@ export default function GamesPage() {
                 totalScenarioCount: game.scenarios?.length || 0
               }}
               onReport={handleReportClick} 
+              onCardClick={handleGameCardClick} // Kirim fungsi ke GameCard
             />
           ))}
         </div>
@@ -336,6 +328,12 @@ export default function GamesPage() {
         onClose={() => setReportModalState({ isOpen: false, gameId: '', gameTitle: '' })}
         gameTitle={reportModalState.gameTitle}
         onSubmit={handleSubmitReport}
+      />
+      
+      <GameConfirmationModal
+        isOpen={isConfirmationModalOpen}
+        onClose={() => setConfirmationModalOpen(false)}
+        game={selectedGame}
       />
     </>
   );
