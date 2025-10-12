@@ -166,7 +166,6 @@ export default function GamePlayer({
     }
   
     setIsGameFinished(true);
-    // HANYA berhenti jika dalam mode review, BUKAN mode main ulang
     if (isReviewMode) {
       if (!isGameOver) toast.success("Review Selesai!");
       return;
@@ -193,7 +192,7 @@ export default function GamePlayer({
       if (isRetryMode && existingScore) {
         const { error: xpError } = await supabase.rpc("increment_xp", {
           user_id_input: user.id,
-          xp_to_add: score, // Langsung tambahkan skor kecil yang didapat sebagai XP
+          xp_to_add: score,
         });
   
         toast.dismiss();
@@ -201,8 +200,8 @@ export default function GamePlayer({
           toast.error("Gagal memperbarui XP Anda.");
         } else {
           toast.success("Game Selesai! Bonus XP telah ditambahkan.");
-          router.push(`/result/${existingScore.id}?status=win`);
         }
+        router.push(`/result/${existingScore.id}?status=win`);
       }
       // JIKA ADA SKOR SEBELUMNYA (MELANJUTKAN GAME)
       else if (existingScore) {
@@ -211,7 +210,11 @@ export default function GamePlayer({
           new_score_input: score,
           new_scenario_count_input: totalScenarios,
         });
-        if (scoreUpdateError) { toast.dismiss(); toast.error("Gagal menyimpan hasil."); return; }
+        if (scoreUpdateError) {
+          toast.dismiss();
+          toast.error("Gagal menyimpan hasil.");
+          return;
+        }
   
         const newXp = score - existingScore.score_achieved;
         if (newXp > 0) {
@@ -307,7 +310,6 @@ export default function GamePlayer({
             const completedCount = scoreData.scenario_count;
             const totalCount = gameData.scenarios.length;
             
-            // Jika game sudah selesai penuh, aktifkan mode main ulang
             if (completedCount >= totalCount) {
               setIsRetryMode(true);
               toast("Mode Main Ulang: Kamu akan mendapat 2.5% XP", { 
@@ -315,7 +317,6 @@ export default function GamePlayer({
                 icon: "🔁" 
               });
             } else if (totalCount > completedCount) {
-              // Jika ada konten baru
               setCurrentScenarioIndex(completedCount);
               setScore(scoreData.score_achieved);
               setNotification(
@@ -411,7 +412,6 @@ export default function GamePlayer({
       if (optionKey === currentScenario.correct_answer) {
         playSound("/sounds/correct.wav");
 
-        // Berikan 2.5% poin jika mode main ulang aktif (tanpa pembulatan)
         const pointsToAdd = isRetryMode ? points * 0.025 : points;
 
         setScore((prev) => prev + pointsToAdd);
