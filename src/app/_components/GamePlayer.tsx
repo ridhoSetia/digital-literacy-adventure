@@ -155,117 +155,115 @@ export default function GamePlayer({
     [user, game, isReviewMode, isGameFinished, supabase, isRetryMode]
   );
 
-  const endGame = useCallback(
-    async (isGameOver = false) => {
-      if (bgMusic) {
-        bgMusic.pause();
+  const endGame = useCallback(async (isGameOver = false) => {
+    if (bgMusic) {
+      bgMusic.pause();
+    }
+    if (!isReviewMode) {
+      if (isGameOver) {
+        playSound("/sounds/gameover.wav");
       }
-      if (!isReviewMode) {
-        if (isGameOver) {
-          playSound("/sounds/gameover.wav");
-        }
-      }
-
-      setIsGameFinished(true);
-      // HANYA berhenti jika dalam mode review, BUKAN mode main ulang
-      if (isReviewMode) {
-        if (!isGameOver) toast.success("Review Selesai!");
-        return;
-      }
-
-      if (!user || !game) return;
-      toast.loading("Menyimpan hasil...");
-
-      await supabase
-        .from("game_sessions")
-        .delete()
-        .match({ user_id: user.id, game_id: game.id });
-
-      if (!isGameOver) {
-        const totalScenarios = game.scenarios.length;
-        const { data: existingScore } = await supabase
-          .from("scores")
-          .select("id, score_achieved")
-          .eq("user_id", user.id)
-          .eq("game_id", game.id)
-          .single();
-
-        if (existingScore) {
-          const { error: scoreError } = await supabase.rpc("update_score", {
-            score_id_input: existingScore.id,
-            new_score_input: score,
-            new_scenario_count_input: totalScenarios,
-          });
-
-          if (scoreError) {
-            toast.dismiss();
-            toast.error("Gagal menyimpan hasil.");
-            return;
-          }
-
-          const newXp = score - existingScore.score_achieved;
-          const { error: rpcError } = await supabase.rpc("increment_xp", {
-            user_id_input: user.id,
-            xp_to_add: newXp > 0 ? newXp : 0,
-          });
-
-          toast.dismiss();
-          if (rpcError) {
-            toast.error("Gagal memperbarui XP.");
-          } else {
-            toast.success("Konten baru selesai!");
-            router.push(`/result/${existingScore.id}?status=win`);
-          }
-        } else {
-          const { data: scoreData, error: scoreError } = await supabase
-            .from("scores")
-            .insert({
-              user_id: user.id,
-              game_id: game.id,
-              score_achieved: score,
-              scenario_count: totalScenarios,
-            })
-            .select("id")
-            .single();
-
-          if (scoreError) {
-            toast.dismiss();
-            toast.error("Gagal menyimpan sesi permainan.");
-            return;
-          }
-
-          await supabase.rpc("increment_play_count", {
-            game_id_input: game.id,
-          });
-          const { error: rpcError } = await supabase.rpc("increment_xp", {
-            user_id_input: user.id,
-            xp_to_add: score,
-          });
-
-          toast.dismiss();
-          if (rpcError) {
-            toast.error("Gagal memperbarui total XP Anda.");
-          } else {
-            toast.success("Game Selesai!");
-            router.push(`/result/${scoreData.id}?status=win`);
-          }
-        }
-      } else {
+    }
+  
+    setIsGameFinished(true);
+    // HANYA berhenti jika dalam mode review, BUKAN mode main ulang
+    if (isReviewMode) {
+      if (!isGameOver) toast.success("Review Selesai!");
+      return;
+    }
+  
+    if (!user || !game) return;
+    toast.loading("Menyimpan hasil...");
+  
+    await supabase
+      .from("game_sessions")
+      .delete()
+      .match({ user_id: user.id, game_id: game.id });
+  
+    if (!isGameOver) {
+      const totalScenarios = game.scenarios.length;
+      const { data: existingScore } = await supabase
+        .from("scores")
+        .select("id, score_achieved")
+        .eq("user_id", user.id)
+        .eq("game_id", game.id)
+        .single();
+  
+      // JIKA INI ADALAH MODE MAIN ULANG (RETRY)
+      if (isRetryMode && existingScore) {
+        const { error: xpError } = await supabase.rpc("increment_xp", {
+          user_id_input: user.id,
+          xp_to_add: score, // Langsung tambahkan skor kecil yang didapat sebagai XP
+        });
+  
         toast.dismiss();
+        if (xpError) {
+          toast.error("Gagal memperbarui XP Anda.");
+        } else {
+          toast.success("Game Selesai! Bonus XP telah ditambahkan.");
+          router.push(`/result/${existingScore.id}?status=win`);
+        }
       }
-    },
-    [
-      isReviewMode,
-      user,
-      game,
-      score,
-      supabase,
-      router,
-      bgMusic,
-      playSound,
-      isRetryMode,
-    ]
-  );
+      // JIKA ADA SKOR SEBELUMNYA (MELANJUTKAN GAME)
+      else if (existingScore) {
+        const { error: scoreUpdateError } = await supabase.rpc("update_score", {
+          score_id_input: existingScore.id,
+          new_score_input: score,
+          new_scenario_count_input: totalScenarios,
+        });
+        if (scoreUpdateError) { toast.dismiss(); toast.error("Gagal menyimpan hasil."); return; }
+  
+        const newXp = score - existingScore.score_achieved;
+        if (newXp > 0) {
+          await supabase.rpc("increment_xp", {
+            user_id_input: user.id,
+            xp_to_add: newXp,
+          });
+        }
+  
+        toast.dismiss();
+        toast.success("Konten baru selesai!");
+        router.push(`/result/${existingScore.id}?status=win`);
+      } 
+      // JIKA INI PERTAMA KALI MENYELESAIKAN
+      else {
+        const { data: scoreData, error: scoreError } = await supabase
+          .from("scores")
+          .insert({
+            user_id: user.id,
+            game_id: game.id,
+            score_achieved: score,
+            scenario_count: totalScenarios,
+          })
+          .select("id")
+          .single();
+  
+        if (scoreError) {
+          toast.dismiss();
+          toast.error("Gagal menyimpan sesi permainan.");
+          return;
+        }
+  
+        await supabase.rpc("increment_play_count", {
+          game_id_input: game.id,
+        });
+        const { error: rpcError } = await supabase.rpc("increment_xp", {
+          user_id_input: user.id,
+          xp_to_add: score,
+        });
+  
+        toast.dismiss();
+        if (rpcError) {
+          toast.error("Gagal memperbarui total XP Anda.");
+        } else {
+          toast.success("Game Selesai!");
+          router.push(`/result/${scoreData.id}?status=win`);
+        }
+      }
+    } else {
+      toast.dismiss();
+    }
+  }, [isReviewMode, user, game, score, supabase, router, bgMusic, playSound, isRetryMode]);
 
   useEffect(() => {
     const fetchGameAndSession = async () => {
@@ -696,7 +694,7 @@ export default function GamePlayer({
                   onTimeUp={() => handleAnswer(null)}
                 />
               )}
-            <div className="font-pixel">Skor: {score} XP</div>
+            <div className="font-pixel">Skor: {score.toFixed(2)} XP</div>
           </div>
           <div className="w-full bg-slate-700 rounded-full h-4 mb-8">
             <div
