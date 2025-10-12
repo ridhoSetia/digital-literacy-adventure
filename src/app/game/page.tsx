@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { CheckCircle, Plus, Users, Loader2, Play, Flag, Shield, History } from 'lucide-react';
+import { CheckCircle, Plus, Users, Loader2, Play, Flag, Shield, History, RefreshCw } from 'lucide-react';
 import JoinGameModal from '../_components/JoinGameModal';
 import ReportGameModal from '../_components/ReportGameModal';
 import { createClient } from '@/lib/supabase-client';
@@ -20,12 +20,49 @@ type Game = {
   game_type: 'quiz' | 'story';
   is_official: boolean;
   profiles: { username: string } | null;
+  scenarios: { id: string }[];
 };
 
-function GameCard({ game, isCompleted, isInProgress, onReport }: { game: Game; isCompleted: boolean; isInProgress: boolean; onReport: (gameId: string, gameTitle: string) => void; }) {
+type GameStatus = {
+  isCompleted: boolean;
+  isInProgress: boolean;
+  hasNewContent: boolean; // Ada penambahan scenarios sejak terakhir diselesaikan
+  completedScenarioCount: number;
+  totalScenarioCount: number;
+};
+
+function GameCard({ 
+  game, 
+  status, 
+  onReport 
+}: { 
+  game: Game; 
+  status: GameStatus;
+  onReport: (gameId: string, gameTitle: string) => void; 
+}) {
+  const { isCompleted, isInProgress, hasNewContent } = status;
+  
+  // Game bisa dimainkan jika:
+  // 1. Belum diselesaikan ATAU
+  // 2. Sudah diselesaikan tapi ada konten baru (hasNewContent === true)
+  const isPlayable = !isCompleted || hasNewContent;
+  
+  // Handler untuk klik card
+  const handleCardClick = (e: React.MouseEvent) => {
+    if (!isPlayable) {
+      e.preventDefault();
+      toast.error('Game sudah diselesaikan. Tunggu update dari pembuat game!');
+    }
+  };
+  
   const cardContent = (
-    <div className={`w-full sm:w-72 flex-shrink-0 relative group border rounded-lg overflow-hidden shadow-sm transition-shadow duration-300 bg-slate-900/70 backdrop-blur-sm border-violet-700 text-white ${isCompleted ? 'cursor-not-allowed' : 'hover:shadow-violet-500/50'}`}>
-      {!game.is_official && !isCompleted && (
+    <div 
+      onClick={handleCardClick}
+      className={`w-full sm:w-72 flex-shrink-0 relative group border rounded-lg overflow-hidden shadow-sm transition-shadow duration-300 bg-slate-900/70 backdrop-blur-sm border-violet-700 text-white ${!isPlayable ? 'cursor-not-allowed' : 'hover:shadow-violet-500/50'}`}
+    >
+      
+      {/* Tombol Report (hanya untuk game yang bisa dimainkan & bukan official) */}
+      {!game.is_official && isPlayable && (
         <button 
           onClick={(e) => { 
             e.preventDefault();
@@ -37,12 +74,22 @@ function GameCard({ game, isCompleted, isInProgress, onReport }: { game: Game; i
           <Flag size={14} />
         </button>
       )}
+      
+      {/* Label Status - Prioritas: UPDATED > In Progress > None */}
+      {hasNewContent && isCompleted && (
+        <div className="absolute top-2 left-2 z-10 px-2 py-1 bg-gradient-to-r from-green-600 to-emerald-600 rounded-md text-xs font-bold flex items-center gap-1 shadow-lg animate-pulse">
+          <RefreshCw size={12} />
+          <span>UPDATED</span>
+        </div>
+      )}
       {isInProgress && !isCompleted && (
         <div className="absolute top-2 left-2 z-10 px-2 py-1 bg-blue-600 rounded-md text-xs font-bold flex items-center gap-1">
           <History size={12} />
           <span>Lanjutkan</span>
         </div>
       )}
+      
+      {/* Cover Image */}
       <div className="relative w-full h-48">
         <Image 
           src={game.cover_image_url || '/placeholder.png'} 
@@ -50,19 +97,27 @@ function GameCard({ game, isCompleted, isInProgress, onReport }: { game: Game; i
           fill 
           style={{ objectFit: 'cover' }}
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          className={`transition-transform duration-300 ${!isCompleted ? 'group-hover:scale-105' : ''} ${isCompleted ? 'filter grayscale' : ''}`} 
+          className={`transition-transform duration-300 ${isPlayable ? 'group-hover:scale-105' : ''} ${!isPlayable ? 'filter grayscale' : ''}`} 
         />
-        {isCompleted && (
+        
+        {/* Overlay "Selesai" hanya jika complete DAN tidak ada konten baru */}
+        {isCompleted && !hasNewContent && (
           <div className="absolute inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center text-white p-4">
             <CheckCircle size={48} className="mb-2 text-green-400" />
             <span className="font-bold text-lg">Selesai</span>
           </div>
         )}
       </div>
+      
+      {/* Card Content */}
       <div className="p-4 flex flex-col justify-between h-32">
         <div>
-          <h3 className={`text-lg font-bold truncate ${!isCompleted ? 'group-hover:text-violet-400' : 'text-gray-500'}`}>{game.title}</h3>
-          <p className="text-sm text-gray-400 mt-1 h-10 overflow-hidden">{game.description || 'Tidak ada deskripsi.'}</p>
+          <h3 className={`text-lg font-bold truncate ${isPlayable ? 'group-hover:text-violet-400' : 'text-gray-500'}`}>
+            {game.title}
+          </h3>
+          <p className="text-sm text-gray-400 mt-1 h-10 overflow-hidden">
+            {game.description || 'Tidak ada deskripsi.'}
+          </p>
         </div>
         <div className="flex justify-between items-center text-xs text-gray-500 mt-2">
           <span>Oleh: {game.profiles?.username || 'Admin'}</span>
@@ -75,20 +130,20 @@ function GameCard({ game, isCompleted, isInProgress, onReport }: { game: Game; i
     </div>
   );
   
-  return isCompleted ? (
-    <div title="Anda sudah menyelesaikan game ini">{cardContent}</div>
-  ) : (
-    <Link href={`/play/${game.game_code}`}>{cardContent}</Link>
-  );
+  // Jika tidak bisa dimainkan, return div biasa tanpa Link
+  if (!isPlayable) {
+    return <div title="Anda sudah menyelesaikan game ini">{cardContent}</div>;
+  }
+  
+  // Jika bisa dimainkan, wrap dengan Link
+  return <Link href={`/play/${game.game_code}`}>{cardContent}</Link>;
 }
-
 
 export default function GamesPage() {
   const [isJoinModalOpen, setJoinModalOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [allGames, setAllGames] = useState<Game[]>([]);
-  const [completedGameIds, setCompletedGameIds] = useState(new Set<string>());
-  const [inProgressGameIds, setInProgressGameIds] = useState(new Set<string>());
+  const [gameStatuses, setGameStatuses] = useState<Map<string, GameStatus>>(new Map());
   const [loading, setLoading] = useState(true);
   const [reportModalState, setReportModalState] = useState({
     isOpen: false,
@@ -101,32 +156,74 @@ export default function GamesPage() {
   
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const gamesPromise = supabase.from('games').select('*, profiles(username)').eq('is_under_review', false).order('created_at', { ascending: false });
     
-    let completedGamesPromise;
+    // Fetch games dengan scenarios
+    const gamesPromise = supabase
+      .from('games')
+      .select('*, profiles(username), scenarios(id)')
+      .eq('is_under_review', false)
+      .order('created_at', { ascending: false });
+    
+    let scoresPromise;
     let inProgressGamesPromise;
     let profilePromise;
 
     if (user) {
-      completedGamesPromise = supabase.from('scores').select('game_id').eq('user_id', user.id);
-      inProgressGamesPromise = supabase.from('game_sessions').select('game_id').eq('user_id', user.id);
-      profilePromise = supabase.from('profiles').select('role').eq('id', user.id).single();
+      // Fetch scores dengan scenario_count (untuk cek apakah ada konten baru)
+      scoresPromise = supabase
+        .from('scores')
+        .select('game_id, scenario_count')
+        .eq('user_id', user.id);
+      
+      // Fetch game yang sedang in progress
+      inProgressGamesPromise = supabase
+        .from('game_sessions')
+        .select('game_id')
+        .eq('user_id', user.id);
+      
+      profilePromise = supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
     }
 
-    const [gamesResult, completedResult, inProgressResult, profileResult] = await Promise.all([
+    const [gamesResult, scoresResult, inProgressResult, profileResult] = await Promise.all([
       gamesPromise, 
-      completedGamesPromise,
+      scoresPromise,
       inProgressGamesPromise,
       profilePromise
     ]);
 
-    if (gamesResult.data) setAllGames(gamesResult.data as Game[]);
-    if (completedResult?.data) {
-      setCompletedGameIds(new Set(completedResult.data.map(s => s.game_id)));
+    if (gamesResult.data) {
+      const games = gamesResult.data as Game[];
+      setAllGames(games);
+      
+      // Build game statuses
+      const statuses = new Map<string, GameStatus>();
+      const inProgressSet = new Set(inProgressResult?.data?.map(s => s.game_id) || []);
+      
+      games.forEach(game => {
+        const totalScenarioCount = game.scenarios?.length || 0;
+        const scoreRecord = scoresResult?.data?.find(s => s.game_id === game.id);
+        const completedScenarioCount = scoreRecord?.scenario_count || 0;
+        
+        const isCompleted = completedScenarioCount > 0; // Pernah menyelesaikan game
+        const hasNewContent = isCompleted && totalScenarioCount > completedScenarioCount; // Ada penambahan scenarios
+        const isInProgress = inProgressSet.has(game.id);
+        
+        statuses.set(game.id, {
+          isCompleted,
+          isInProgress,
+          hasNewContent,
+          completedScenarioCount,
+          totalScenarioCount
+        });
+      });
+      
+      setGameStatuses(statuses);
     }
-    if (inProgressResult?.data) {
-      setInProgressGameIds(new Set(inProgressResult.data.map(s => s.game_id)));
-    }
+    
     if (profileResult?.data?.role === 'admin') {
       setIsAdmin(true);
     }
@@ -174,8 +271,13 @@ export default function GamesPage() {
             <GameCard 
               key={game.id} 
               game={game} 
-              isCompleted={completedGameIds.has(game.id)} 
-              isInProgress={inProgressGameIds.has(game.id)}
+              status={gameStatuses.get(game.id) || {
+                isCompleted: false,
+                isInProgress: false,
+                hasNewContent: false,
+                completedScenarioCount: 0,
+                totalScenarioCount: game.scenarios?.length || 0
+              }}
               onReport={handleReportClick} 
             />
           ))}
