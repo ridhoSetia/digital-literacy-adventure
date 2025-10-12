@@ -192,7 +192,7 @@ export default function GamePlayer({
       if (isRetryMode && existingScore) {
         const { error: xpError } = await supabase.rpc("increment_xp", {
           user_id_input: user.id,
-          xp_to_add: score,
+          xp_to_add: Math.round(score), // Bulatkan skor sebelum dikirim
         });
   
         toast.dismiss();
@@ -201,7 +201,7 @@ export default function GamePlayer({
         } else {
           toast.success("Game Selesai! Bonus XP telah ditambahkan.");
         }
-        router.push(`/result/${existingScore.id}?status=win`);
+        router.push(`/result/${existingScore.id}?status=win&retryScore=${score}`);
       }
       // JIKA ADA SKOR SEBELUMNYA (MELANJUTKAN GAME)
       else if (existingScore) {
@@ -220,7 +220,7 @@ export default function GamePlayer({
         if (newXp > 0) {
           await supabase.rpc("increment_xp", {
             user_id_input: user.id,
-            xp_to_add: newXp,
+            xp_to_add: Math.round(newXp), // Bulatkan skor sebelum dikirim
           });
         }
   
@@ -241,7 +241,7 @@ export default function GamePlayer({
           .select("id")
           .single();
   
-        if (scoreError) {
+        if (scoreError || !scoreData) {
           toast.dismiss();
           toast.error("Gagal menyimpan sesi permainan.");
           return;
@@ -252,7 +252,7 @@ export default function GamePlayer({
         });
         const { error: rpcError } = await supabase.rpc("increment_xp", {
           user_id_input: user.id,
-          xp_to_add: score,
+          xp_to_add: Math.round(score), // Bulatkan skor sebelum dikirim
         });
   
         toast.dismiss();
