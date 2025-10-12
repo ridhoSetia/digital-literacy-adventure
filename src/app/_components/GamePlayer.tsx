@@ -167,8 +167,9 @@ export default function GamePlayer({
       }
 
       setIsGameFinished(true);
-      if (isReviewMode || isRetryMode) {
-        if (!isGameOver) toast.success("Game Selesai!");
+      // HANYA berhenti jika dalam mode review, BUKAN mode main ulang
+      if (isReviewMode) {
+        if (!isGameOver) toast.success("Review Selesai!");
         return;
       }
 
