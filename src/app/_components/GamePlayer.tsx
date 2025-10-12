@@ -111,14 +111,25 @@ export default function GamePlayer({
   useEffect(() => {
     if (isReviewMode || !sessionLoaded) return;
 
-    const audio = new Audio("/sounds/background.mp3");
+    // 1. Perbaiki path ke folder public
+    const audio = new Audio("/sounds/background.wav");
     audio.loop = true;
-    audio.volume = 0.2;
-    audio.play().catch((e) => console.error("Gagal memutar musik latar:", e));
+    audio.volume = 1; // 2. Turunkan volume agar lebih nyaman didengar
+
+    // 3. Aktifkan dan tangani promise dari .play() untuk kebijakan autoplay
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise.catch((error) => {
+        console.error("Autoplay musik latar diblokir oleh browser:", error);
+        // Anda bisa menambahkan UI di sini untuk meminta user memulai musik secara manual
+      });
+    }
+
     setBgMusic(audio);
 
     return () => {
       audio.pause();
+      audio.src = ""; // Praktik baik untuk membersihkan resource
     };
   }, [isReviewMode, sessionLoaded]);
 
@@ -138,7 +149,7 @@ export default function GamePlayer({
           { onConflict: "user_id, game_id" }
         );
       } catch (err) {
-        console.error("Exception saving progress:", err);
+        // console.error("Exception saving progress:", err);
       }
     },
     [user, game, isReviewMode, isGameFinished, supabase]
@@ -150,7 +161,9 @@ export default function GamePlayer({
         bgMusic.pause();
       }
       if (!isReviewMode) {
-        isGameOver ? playSound("/sounds/gameover.mp3") : playSound("/sounds/win.mp3");
+        isGameOver
+          ? playSound("/sounds/gameover.wav")
+          : playSound("/sounds/win.wav");
       }
 
       setIsGameFinished(true);
@@ -178,16 +191,16 @@ export default function GamePlayer({
           .single();
 
         if (existingScore) {
-          const { error: scoreError } = await supabase.rpc('update_score', {
+          const { error: scoreError } = await supabase.rpc("update_score", {
             score_id_input: existingScore.id,
             new_score_input: score,
-            new_scenario_count_input: totalScenarios
+            new_scenario_count_input: totalScenarios,
           });
 
           if (scoreError) {
             toast.dismiss();
             toast.error("Gagal menyimpan hasil.");
-            console.error("Gagal memanggil RPC update_score:", scoreError);
+            // console.error("Gagal memanggil RPC update_score:", scoreError);
             return;
           }
 
@@ -222,7 +235,9 @@ export default function GamePlayer({
             return;
           }
 
-          await supabase.rpc("increment_play_count", { game_id_input: game.id });
+          await supabase.rpc("increment_play_count", {
+            game_id_input: game.id,
+          });
           const { error: rpcError } = await supabase.rpc("increment_xp", {
             user_id_input: user.id,
             xp_to_add: score,
@@ -287,7 +302,11 @@ export default function GamePlayer({
             if (totalCount > completedCount) {
               setCurrentScenarioIndex(completedCount);
               setScore(scoreData.score_achieved);
-              setNotification(`Konten baru tersedia! Melanjutkan dari skenario ${completedCount + 1}`);
+              setNotification(
+                `Konten baru tersedia! Melanjutkan dari skenario ${
+                  completedCount + 1
+                }`
+              );
             }
           }
         }
@@ -306,12 +325,12 @@ export default function GamePlayer({
       router.push("/");
     }
   }, [gameCode, user, router, supabase, isReviewMode]);
-  
+
   useEffect(() => {
-      if (notification) {
-          toast.success(notification, { duration: 4000 });
-          setNotification(null);
-      }
+    if (notification) {
+      toast.success(notification, { duration: 4000 });
+      setNotification(null);
+    }
   }, [notification]);
 
   useEffect(() => {
@@ -322,16 +341,29 @@ export default function GamePlayer({
 
   useEffect(() => {
     if (!sessionLoaded || isLoading || !game) return;
-    const indexToSave = isAnswered ? currentScenarioIndex + 1 : currentScenarioIndex;
+    const indexToSave = isAnswered
+      ? currentScenarioIndex + 1
+      : currentScenarioIndex;
     if (indexToSave < game.scenarios.length) {
       saveProgress(indexToSave, score, hp);
     }
-  }, [isAnswered, currentScenarioIndex, score, hp, sessionLoaded, isLoading, game, saveProgress]);
+  }, [
+    isAnswered,
+    currentScenarioIndex,
+    score,
+    hp,
+    sessionLoaded,
+    isLoading,
+    game,
+    saveProgress,
+  ]);
 
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (!isGameFinished && game) {
-        const indexToSave = isAnswered ? currentScenarioIndex + 1 : currentScenarioIndex;
+        const indexToSave = isAnswered
+          ? currentScenarioIndex + 1
+          : currentScenarioIndex;
         if (indexToSave < game.scenarios.length) {
           saveProgress(indexToSave, score, hp);
         }
@@ -339,7 +371,15 @@ export default function GamePlayer({
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [saveProgress, isGameFinished, isAnswered, currentScenarioIndex, score, hp, game]);
+  }, [
+    saveProgress,
+    isGameFinished,
+    isAnswered,
+    currentScenarioIndex,
+    score,
+    hp,
+    game,
+  ]);
 
   const handleAnswer = useCallback(
     (optionKey: string | null) => {
@@ -358,7 +398,10 @@ export default function GamePlayer({
       } else {
         playSound("/sounds/incorrect.wav");
         setHp((prev) => Math.max(0, prev - 20));
-        toast.error(optionKey ? "Kurang Tepat! -20 HP" : "Waktu Habis! -20 HP", { icon: "❌" });
+        toast.error(
+          optionKey ? "Kurang Tepat! -20 HP" : "Waktu Habis! -20 HP",
+          { icon: "❌" }
+        );
       }
       setSelectedOption(optionKey);
       setIsAnswered(true);
@@ -381,7 +424,9 @@ export default function GamePlayer({
     return (
       <div className="flex min-h-screen items-center justify-center text-white flex-col p-4">
         <ShieldOff className="w-24 h-24 text-red-500 mb-4" />
-        <h1 className="text-5xl font-bold font-pixel text-red-500 text-center">GAME OVER</h1>
+        <h1 className="text-5xl font-bold font-pixel text-red-500 text-center">
+          GAME OVER
+        </h1>
         <p className="text-gray-400 mt-4 text-center">Anda kehabisan HP.</p>
         <button
           onClick={() => {
@@ -410,10 +455,18 @@ export default function GamePlayer({
     <div className="bg-slate-900/50 backdrop-blur-sm border border-violet-700 p-8 rounded-lg shadow-lg">
       {currentScenario.image_url && (
         <div className="relative w-full h-56 mb-6 rounded-lg overflow-hidden border-2 border-slate-700">
-          <Image src={currentScenario.image_url} alt="Gambar Skenario" fill style={{ objectFit: "cover" }} sizes="(max-width: 768px) 100vw, 50vw" />
+          <Image
+            src={currentScenario.image_url}
+            alt="Gambar Skenario"
+            fill
+            style={{ objectFit: "cover" }}
+            sizes="(max-width: 768px) 100vw, 50vw"
+          />
         </div>
       )}
-      <h2 className="text-2xl font-bold mb-4 font-display tracking-wider">{currentScenario.situation}</h2>
+      <h2 className="text-2xl font-bold mb-4 font-display tracking-wider">
+        {currentScenario.situation}
+      </h2>
       <div className="space-y-3">
         {Object.entries(currentScenario.options).map(([key, value]) => (
           <button
@@ -424,9 +477,23 @@ export default function GamePlayer({
             }}
             disabled={isAnswered || isGameFinished}
             className={`w-full text-left p-4 rounded-lg border-2 transition-all duration-200 
-                ${isAnswered && key === currentScenario.correct_answer ? "bg-green-900/50 border-green-500" : ""} 
-                ${isAnswered && key === selectedOption && key !== currentScenario.correct_answer ? "bg-red-900/50 border-red-500" : ""} 
-                ${!isAnswered ? "bg-slate-800/50 border-slate-700 hover:bg-violet-900/50 hover:border-violet-600" : "border-slate-700"}`}
+                ${
+                  isAnswered && key === currentScenario.correct_answer
+                    ? "bg-green-900/50 border-green-500"
+                    : ""
+                } 
+                ${
+                  isAnswered &&
+                  key === selectedOption &&
+                  key !== currentScenario.correct_answer
+                    ? "bg-red-900/50 border-red-500"
+                    : ""
+                } 
+                ${
+                  !isAnswered
+                    ? "bg-slate-800/50 border-slate-700 hover:bg-violet-900/50 hover:border-violet-600"
+                    : "border-slate-700"
+                }`}
           >
             {value}
           </button>
@@ -435,7 +502,9 @@ export default function GamePlayer({
       {isAnswered && (
         <div className="mt-6 animate-fade-in">
           <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-lg">
-            <h3 className="font-bold font-display tracking-wide text-yellow-400">Penjelasan:</h3>
+            <h3 className="font-bold font-display tracking-wide text-yellow-400">
+              Penjelasan:
+            </h3>
             <p className="text-gray-300">{currentScenario.explanation}</p>
           </div>
           <button
@@ -446,7 +515,9 @@ export default function GamePlayer({
             disabled={isGameFinished}
             className="w-full mt-4 bg-violet-600 text-white py-3 rounded-lg font-semibold hover:bg-violet-700 transition flex items-center justify-center gap-2 disabled:bg-slate-600"
           >
-            {currentScenarioIndex < game!.scenarios.length - 1 ? "Lanjut ke Pertanyaan Berikutnya" : "Lihat Hasil Akhir"}
+            {currentScenarioIndex < game!.scenarios.length - 1
+              ? "Lanjut ke Pertanyaan Berikutnya"
+              : "Lihat Hasil Akhir"}
             <ArrowRight size={18} />
           </button>
         </div>
@@ -460,11 +531,24 @@ export default function GamePlayer({
         <div className="bg-slate-900/50 backdrop-blur-sm border border-violet-700 p-8 rounded-lg shadow-lg mb-6">
           {currentScenario.image_url && (
             <div className="relative w-full h-56 mb-6 rounded-lg overflow-hidden border-2 border-slate-700">
-              <Image src={currentScenario.image_url} alt="Gambar Narasi" fill style={{ objectFit: "cover" }} sizes="(max-width: 768px) 100vw, 50vw" />
+              <Image
+                src={currentScenario.image_url}
+                alt="Gambar Narasi"
+                fill
+                style={{ objectFit: "cover" }}
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
             </div>
           )}
           <p className="text-lg leading-relaxed text-gray-300">
-            <HighlightedText text={currentScenario.situation} highlight={viewState === "feedback" ? currentScenario.highlight_phrase : null} />
+            <HighlightedText
+              text={currentScenario.situation}
+              highlight={
+                viewState === "feedback"
+                  ? currentScenario.highlight_phrase
+                  : null
+              }
+            />
           </p>
         </div>
       )}
@@ -482,7 +566,9 @@ export default function GamePlayer({
       )}
       {viewState === "answering" && (
         <div className="bg-slate-900/50 backdrop-blur-sm border border-violet-700 p-8 rounded-lg shadow-lg">
-          <h2 className="text-2xl font-bold mb-4 font-display tracking-wider">{currentScenario.question}</h2>
+          <h2 className="text-2xl font-bold mb-4 font-display tracking-wider">
+            {currentScenario.question}
+          </h2>
           <div className="space-y-3">
             {Object.entries(currentScenario.options).map(([key, value]) => (
               <button
@@ -502,8 +588,18 @@ export default function GamePlayer({
       )}
       {viewState === "feedback" && (
         <div>
-          <div className={`p-4 rounded-lg mb-4 text-center font-bold font-pixel text-lg ${selectedOption === currentScenario.correct_answer ? "bg-green-900/50 text-green-300" : "bg-red-900/50 text-red-300"}`}>
-            {selectedOption === currentScenario.correct_answer ? "Jawaban Benar!" : selectedOption === null ? "Waktu Habis!" : "Jawaban Kurang Tepat!"}
+          <div
+            className={`p-4 rounded-lg mb-4 text-center font-bold font-pixel text-lg ${
+              selectedOption === currentScenario.correct_answer
+                ? "bg-green-900/50 text-green-300"
+                : "bg-red-900/50 text-red-300"
+            }`}
+          >
+            {selectedOption === currentScenario.correct_answer
+              ? "Jawaban Benar!"
+              : selectedOption === null
+              ? "Waktu Habis!"
+              : "Jawaban Kurang Tepat!"}
           </div>
           <p className="p-4 bg-slate-800/50 border border-slate-700 rounded-lg mb-4 text-gray-300">
             <b>Penjelasan:</b> {currentScenario.explanation}
@@ -516,7 +612,9 @@ export default function GamePlayer({
             disabled={isGameFinished}
             className="w-full bg-violet-600 text-white py-3 rounded-lg font-semibold hover:bg-violet-700 transition disabled:bg-slate-600"
           >
-            {currentScenarioIndex < game!.scenarios.length - 1 ? "Lanjut ke Skenario Berikutnya" : "Lihat Hasil Akhir"}
+            {currentScenarioIndex < game!.scenarios.length - 1
+              ? "Lanjut ke Skenario Berikutnya"
+              : "Lihat Hasil Akhir"}
           </button>
         </div>
       )}
@@ -529,13 +627,21 @@ export default function GamePlayer({
         <>
           <div className="flex justify-between items-center mb-4 text-gray-300">
             <div className="font-pixel">HP: {hp}/100</div>
-            {game!.game_type === "story" && viewState === "answering" && !isAnswered && (
-              <Timer duration={currentScenario.answer_time || 15} onTimeUp={() => handleAnswer(null)} />
-            )}
+            {game!.game_type === "story" &&
+              viewState === "answering" &&
+              !isAnswered && (
+                <Timer
+                  duration={currentScenario.answer_time || 15}
+                  onTimeUp={() => handleAnswer(null)}
+                />
+              )}
             <div className="font-pixel">Skor: {score} XP</div>
           </div>
           <div className="w-full bg-slate-700 rounded-full h-4 mb-8">
-            <div className="bg-violet-500 h-4 rounded-full transition-all duration-500" style={{ width: `${progress}%` }}></div>
+            <div
+              className="bg-violet-500 h-4 rounded-full transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            ></div>
           </div>
         </>
       )}

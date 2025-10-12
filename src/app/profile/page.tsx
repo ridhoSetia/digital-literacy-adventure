@@ -47,7 +47,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedGame, setSelectedGame] = useState<CreatedGame | null>(null);
-  const [isConfirmationModalOpen, setConfirmationModalOpen] = useState(false); // <-- State untuk modal konfirmasi
+  const [isConfirmationModalOpen, setConfirmationModalOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!user) return;
@@ -114,29 +114,39 @@ export default function ProfilePage() {
     }
     setIsSaving(false);
   };
-
-  const handleDeleteGame = async (gameId: string, gameTitle: string) => {
-    if (
-      window.confirm(
-        `Apakah Anda yakin ingin menghapus game "${gameTitle}"? Aksi ini tidak bisa dibatalkan.`
-      )
-    ) {
-      const { error } = await supabase.from("games").delete().eq("id", gameId);
-
-      if (error) {
-        toast.error("Gagal menghapus game.");
-      } else {
-        toast.success(`Game "${gameTitle}" berhasil dihapus.`);
-        setCreatedGames((prevGames) =>
-          prevGames.filter((game) => game.id !== gameId)
-        );
-      }
+  
+  // ▼▼▼ FUNGSI YANG DIPERBAIKI ▼▼▼
+  const handleDeleteGame = async () => {
+    if (!selectedGame) {
+      toast.error("Tidak ada game yang dipilih.");
+      return;
     }
+
+    const { id: gameId, title: gameTitle } = selectedGame;
+    
+    // Tutup modal
+    setConfirmationModalOpen(false);
+
+    const { error } = await supabase.from("games").delete().eq("id", gameId);
+
+    if (error) {
+      toast.error("Gagal menghapus game.");
+    } else {
+      toast.success(`Game "${gameTitle}" berhasil dihapus.`);
+      setCreatedGames((prevGames) =>
+        prevGames.filter((game) => game.id !== gameId)
+      );
+    }
+    
+    // Reset state setelah operasi selesai
+    setSelectedGame(null);
   };
 
   const openDeleteConfirmation = (game: CreatedGame) => {
-    setConfirmationModalOpen(true);
+    setSelectedGame(game); // <-- Atur game yang dipilih
+    setConfirmationModalOpen(true); // <-- Buka modal
   };
+  // ▲▲▲ AKHIR PERBAIKAN ▲▲▲
 
   if (loading) {
     return (
@@ -159,7 +169,6 @@ export default function ProfilePage() {
       <div className="max-w-4xl mx-auto space-y-8 text-white pt-24 px-4 pb-4 sm:px-6 sm:pb-6 lg:px-8 lg:pb-8">
         {/* --- Bagian Info Profil --- */}
         <div className="bg-slate-900/50 backdrop-blur-sm border border-violet-700 rounded-xl shadow-lg p-8">
-          {/* ... sisa konten tidak berubah ... */}
           <div className="flex flex-col items-center text-center">
             <div className="w-24 h-24 border-4 border-violet-500 rounded-full flex items-center justify-center text-violet-300 mb-4">
               <User size={48} />
@@ -229,7 +238,6 @@ export default function ProfilePage() {
 
         {/* --- Bagian Game Buatan Saya --- */}
         <div className="bg-slate-900/50 backdrop-blur-sm border border-violet-700 rounded-xl shadow-lg p-8">
-          {/* ... sisa konten tidak berubah ... */}
           <h2 className="text-2xl font-bold text-gray-100 mb-6 flex items-center gap-3 font-display tracking-wider">
             <Gamepad />
             Game Buatan Saya
@@ -298,7 +306,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {selectedGame && (
+      {selectedGame && !isConfirmationModalOpen && (
         <GameShareModal
           isOpen={!!selectedGame}
           onClose={() => setSelectedGame(null)}
@@ -306,16 +314,16 @@ export default function ProfilePage() {
           shareLink={`${window.location.origin}/play/${selectedGame.game_code}`}
         />
       )}
+      
       <ConfirmationModal
         isOpen={isConfirmationModalOpen}
-        onClose={() => setConfirmationModalOpen(false)}
-        title="Hapus Game"
-        confirmQuestion={`Apakah Anda yakin ingin menghapus game ini? Aksi ini tidak bisa dibatalkan.`}
-        action={() => {
-          if (selectedGame) {
-            handleDeleteGame(selectedGame.id, selectedGame.title);
-          }
+        onClose={() => {
+          setConfirmationModalOpen(false);
+          setSelectedGame(null); // Reset saat modal ditutup
         }}
+        title="Konfirmasi Hapus Game"
+        confirmQuestion={`Apakah Anda yakin ingin menghapus game "${selectedGame?.title}"? Aksi ini tidak bisa dibatalkan.`}
+        action={handleDeleteGame}
       />
     </>
   );
